@@ -5,15 +5,25 @@
 #include <ctype.h>
 #include <stdio.h>
 
+typedef int bool;
+
 /////////////////////////////////////////////////////////////////////
 // TYPES
 
-str mkStr(int32_t start, int32_t length)
+int static inline end(str s){return s.start + s.length;}
+
+str static inline start_length(int32_t start, int32_t length)
 {
+    if (start < 0 || length < 0) assert(0);
     str res;
     res.start = start;
     res.length = length;
     return res;
+}
+
+str static inline start_end(int32_t start, int32_t end)
+{
+    return start_length(start, end - start);
 }
 
 typedef struct
@@ -51,21 +61,111 @@ struct document
 {
     char* body; // pointer to initial argument, not owned by us
 
-    int cursor; // things only used while parsing
-    int length;
+    // things only used while parsing
+    int cursor; // pointer to where we are in body
+    int length; // total length of body
+    // if cursor is >= length we have gone past the end
 
     char* error_message;
-    node* node;
     node_buffer nodes;
     attr_buffer attrs;
 };
 
 
 /////////////////////////////////////////////////////////////////////
+// RENDER CODE
+
+typedef struct
+{
+    document* d;
+    char* buffer;
+    int length;
+    int cursor;
+} render;
+
+void static inline render_char(render* r, char c)
+{
+    if (r->cursor < r->length)
+        r->buffer[r->cursor] = c;
+    r->cursor++;
+}
+
+void static inline bound(char* msg, int index, int mn, int mx)
+{
+    if (index < mn || index > mx)
+    {
+        printf("Bounds checking failed %s, got %i, which should be in %i:%i\n", msg, index, mn, mx);
+        assert(0);
+    }
+}
+
+void static inline bound_str(char* msg, str s, int mn, int mx)
+{
+    if (s.length < 0) assert(0);
+    bound(msg, s.start, mn, mx);
+    bound(msg, end(s), mn, mx);
+}
+
+void render_str(render* r, str s)
+{
+    bound_str("render_str", s, 0, r->d->length);
+    render_char(r, '[');
+    for (int i = 0; i < s.length; i++)
+        render_char(r, r->d->body[s.start + i]);
+    render_char(r, ']');
+}
+
+void render_tag(render* r, node* n);
+
+void render_content(render* r, node* n)
+{
+    bound_str("render_conent inner", n->inner, 0, r->d->length);
+    bound_str("render_conent nodes", n->nodes, 0, r->d->nodes.used_front);
+    bound_str("render_conent attrs", n->attrs, 0, r->d->attrs.used);
+
+    int done = n->inner.start;
+    printf("%i\n", n->nodes.length);
+    for (int i = 0; i < n->nodes.length; i++)
+    {
+        node* x = &r->d->nodes.nodes[n->nodes.start + i];
+        render_str(r, start_end(done, x->outer.start));
+        done = end(x->outer);
+        render_tag(r, x);
+    }
+    render_str(r, start_end(done, end(n->inner)));
+}
+
+void render_tag(render* r, node* n)
+{
+    render_char(r, '<');
+    render_str(r, n->name);
+    render_char(r, '>');
+    render_content(r, n);
+    render_char(r, '<');
+    render_char(r, '/');
+    render_str(r, n->name);
+    render_char(r, '>');
+}
+
+int document_render(document* d, char* buffer, int length)
+{
+    render r;
+    r.d = d;
+    r.buffer = buffer;
+    r.length = length;
+    r.cursor = 0;
+    node* me = document_node(d);
+    assert(me->nodes.start == 1 && me->nodes.length == 1);
+    render_content(&r, document_node(d));
+    return r.cursor;
+}
+
+
+/////////////////////////////////////////////////////////////////////
 // NOT THE PARSER
 
 char* document_error(document* d){return d->error_message;}
-node* document_node(document* d){return d->node;}
+node* document_node(document* d){return &d->nodes.nodes[0];}
 str node_inner(node* n){return n->inner;}
 str node_outer(node* n){return n->outer;}
 
@@ -117,17 +217,45 @@ node* node_nextChildBy(document* d, node* parent, node* prev, char* s, int slen)
 
 
 /////////////////////////////////////////////////////////////////////
-// PARSER PRIMITIVES
+// PARSER COMBINATORS
 
-int has(document* d, int ask){return (d->length - d->cursor) >= ask;}
+char static inline peekAt(document* d, int i)
+{
+    int j = d->cursor + i;
+    return j >= d->length ? 0 : d->body[j];
+}
 
+void static inline skip(document* d, int i){d->cursor += i;}
+char static inline peek(document* d){return peekAt(d, 0);}
+char static inline get(document* d){char c = peek(d); skip(d, 1); return c;}
+
+// Remove whitespace characters from the cursor while they are still whitespace
 void trim(document* d)
 {
-    while (has(d, 1) && isspace(grab(d->body[*p]))
-        *p += 1;
+    while (isspace(peek(d)))
+        skip(d, 1);
+}
+
+// Find this character form the cursor onwards, if true adjust the cursor to that char, otherwise leave it at the end
+bool find(document* d, char c)
+{
+    char* start = &d->body[d->cursor];
+    char* end = memchr(start, c, d->length - d->cursor);
+    if (end == NULL)
+    {
+        d->cursor = d->length;
+        return 0;
+    }
+    else
+    {
+        d->cursor += end - start;
+        return 1;
+    }
 }
 
 
+/////////////////////////////////////////////////////////////////////
+// PARSING CODE
 
 void node_alloc(node_buffer* b, int ask)
 {
@@ -145,7 +273,8 @@ void attr_alloc(attr_buffer* b, int ask)
 
 void lexeme(char* msg, document* d, str s)
 {
-    printf("Lexeme: %s, %i:%i, %.*s\n", msg, s.start, s.length, s.length, &d->body[s.start]);
+    if (1)
+        printf("Lexeme: %s, %i:%i, %.*s\n", msg, s.start, s.length, s.length, &d->body[s.start]);
 }
 
 int isName(char c)
@@ -155,82 +284,72 @@ int isName(char c)
 
 // you now expect a name, perhaps preceeded by whitespace
 // the name may be empty
-str parse_name(document* d, int* p)
+str parse_name(document* d)
 {
-    printf("Before trim: %i\n", *p);
-    trim(d, p);
-    printf("After trim: %i %c\n", *p, d->body[*p]);
+    trim(d);
     str res;
-    res.start = *p;
-    while (*p < d->bodylen && isName(d->body[*p]))
-        *p += 1;
-    printf("After trim: %i\n", *p);
-    res.length = *p - res.start;
+    res.start = d->cursor;
+    while (isName(peek(d)))
+        get(d);
+    res.length = d->cursor - res.start;
     lexeme("parse_name", d, res);
     return res;
 }
 
-str parse_attrval(document* d, int* p)
+str parse_attrval(document* d)
 {
-    trim(d, p);
+    trim(d);
     str res;
-    if (*p < d->bodylen || d->body[*p] != '=') return mkStr(0,0);
-    trim(d, p);
-    return parse_name(d, p);
+    if (peek(d) != '=') return start_length(0,0);
+    trim(d);
+    return parse_name(d);
 }
 
 
 // seen a tag name, now looking for attributes terminated by >
 // puts the attributes it finds in the attribute buffer
-void parse_attributes(document* s, int* p)
+str parse_attributes(document* d)
 {
-
-
+    str res;
+    res.start = d->attrs.used;
+    // do attribute parsing here
+    res.length = d->attrs.used - res.start;
+    return res;
 }
 
-void parse_content(document* d, int* p);
+str parse_content(document* d);
 
 
 // Add a new entry into tag, am at a '<'
-void parse_tag(document* d, int* p)
+void parse_tag(document* d)
 {
-    printf("Before parse_tag %i\n", *p);
-    assert(d->body[*p] == '<');
+    char c = get(d);
+    assert(c == '<');
 
     node_alloc(&d->nodes, 1);
     int me = d->nodes.used_back;
     d->nodes.used_back++;
 
-    *p += 1;
-    printf("After increment %i\n", *p);
-    d->nodes.nodes[me].name = parse_name(d, p);
+    d->nodes.nodes[me].name = parse_name(d);
+    d->nodes.nodes[me].attrs = parse_attributes(d);
 
-    d->nodes.nodes[me].attrs.start = d->attrs.used;
-    parse_attributes(d, p);
-    d->nodes.nodes[me].attrs.length = d->attrs.used;
-
-    if (d->bodylen - *p >= 2 &&
-        (d->body[*p] == '/' || d->body[*p] == '?') &&
-        d->body[*p + 1] == '>')
+    c = peek(d);
+    if ((c == '/' || c == '?') && peekAt(d, 1) == '>')
     {
-        *p += 2;
+        skip(d, 2);
+        d->nodes.nodes[me].nodes = start_length(0, 0);
         return;
     }
-
-    d->nodes.nodes[me].nodes.start = 42;
-    parse_content(d, p);
-    d->nodes.nodes[me].nodes.length = 42;
+    d->nodes.nodes[me].nodes = parse_content(d);
 
     if (d->error_message != NULL) return;
-    if (d->bodylen - *p >= 2 &&
-        d->body[*p] == '<' &&
-        d->body[*p + 1] == '/')
+    if (peek(d) == '<' && peekAt(d, 1) == '/')
     {
-        *p += 2;
-        str close = parse_name(d, p);
+        skip(d, 2);
+        str close = parse_name(d);
         lexeme("openning tag", d, d->nodes.nodes[me].name);
         lexeme("closing tag", d, close);
-        trim(d, p);
+        trim(d);
         if (close.length == d->nodes.nodes[me].name.length &&
             memcmp(&d->body[close.start], &d->body[d->nodes.nodes[me].name.start], close.length) == 0)
             return;
@@ -240,47 +359,38 @@ void parse_tag(document* d, int* p)
     d->error_message = strdup("Weirdness when trying to close tags");
 }
 
-// Parser until </
-void parse_content(document* d, int* p)
+// Parser until </, return the index of your node children
+str parse_content(document* d)
 {
     int before = d->nodes.used_back;
     while (d->error_message == NULL)
     {
         // only < can have any impact
-        char* res = memchr(&d->body[*p], '<', d->bodylen - *p);
-        printf("%i - %i = %i\n", d->bodylen, *p, d->bodylen - *p);
-        if (res == NULL)
+        if (!find(d, '<'))
         {
-            *p = d->bodylen;
-            printf("break 0\n");
             break;
         }
-        *p = res - d->body;
-        if (*p + 1 == d->bodylen)
-        {
-            // final character of string is <
-            printf("break 1\n");
-            break;
-        }
-        else if (d->body[*p + 1] == '/')
+        if (peekAt(d, 1) == '/')
         {
             // have found a </
-            printf("break 2\n");
             break;
         }
         else
         {
-            printf("calling parse_tag\n");
-            parse_tag(d, p);
+            printf("parsing a tag\n");
+            parse_tag(d);
         }
     }
     int diff = d->nodes.used_back - before;
     node_alloc(&d->nodes, diff);
+    str res = start_length(d->nodes.used_front, diff);
 
-//    for (int i = 0; i < diff; i++)
-//        d->nodes.nodes[d->nodes.used_front + i] = d->nodes.nodes[d->nodes.size - d->nodes.used_back - i];
+    printf("res %i %i\n", res.start, res.length);
+    for (int i = 0; i < diff; i++)
+        d->nodes.nodes[d->nodes.used_front + i] = d->nodes.nodes[d->nodes.size - d->nodes.used_back - i];
     d->nodes.used_front += diff;
     d->nodes.used_back -= diff;
+    return res;
 }
 
 document* document_parse(char* s, int slen)
@@ -289,9 +399,9 @@ document* document_parse(char* s, int slen)
 
     document* d = malloc(sizeof(document));
     d->body = s;
-    d->bodylen = slen;
+    d->cursor = 0;
+    d->length = slen;
     d->error_message = NULL;
-    d->node = NULL;
     d->attrs.size = 0;
     d->attrs.used = 0;
     d->attrs.attrs = NULL;
@@ -300,15 +410,23 @@ document* document_parse(char* s, int slen)
     d->nodes.used_front = 1;
     d->nodes.nodes = malloc(sizeof(node) * 1000);
 
-    d->nodes.nodes[0].name = mkStr(0, 0);
-    d->nodes.nodes[0].outer = mkStr(0, slen);
-    d->nodes.nodes[0].inner = mkStr(0, slen);
-    d->nodes.nodes[0].attrs = mkStr(0, 0);
-    int p = 0;
-    parse_content(d, &p);
-    if (p != slen && d->error_message == NULL)
+    d->nodes.nodes[0].name = start_length(0, 0);
+    d->nodes.nodes[0].outer = start_length(0, slen);
+    d->nodes.nodes[0].inner = start_length(0, slen);
+    d->nodes.nodes[0].attrs = start_length(0, 0);
+    d->nodes.nodes[0].nodes = parse_content(d);
+
+    node* me = &d->nodes.nodes[0];
+//    printf("Got %i %i\n", me->nodes.start, me->nodes.length);
+    assert(me->nodes.start == 1 && me->nodes.length == 1);
+
+    me = &d->nodes.nodes[1];
+//    printf("Got %i %i\n", me->nodes.start, me->nodes.length);
+    assert(me->nodes.length == 0);
+
+    if (d->cursor < d->length && d->error_message == NULL)
     {
-        printf("%i vs %i\n", p, slen);
+        printf("%i vs %i\n", d->cursor, d->length);
         d->error_message = strdup("Trailing junk at the end of the document");
     }
     return d;

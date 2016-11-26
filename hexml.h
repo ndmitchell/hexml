@@ -23,6 +23,13 @@ typedef struct
 // Must use document_free to release the memory.
 document* document_parse(char* s, int slen);
 
+// Free the memory returned from document_parse.
+void document_free(document* d);
+
+// generate a fresh document with the same semantics
+// requires an input buffer, returns the size of the rendered document
+int document_render(document* d, char* buffer, int length);
+
 // return either NULL (successful parse) or the error message
 char* document_error(document* d);
 
