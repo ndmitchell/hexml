@@ -139,6 +139,16 @@ void render_tag(render* r, node* n)
 {
     render_char(r, '<');
     render_str(r, n->name);
+    for (int i = 0; i < n->attrs.length; i++)
+    {
+        attr* x = &r->d->attrs.attrs[n->attrs.start + i];
+        render_char(r, ' ');
+        render_str(r, x->name);
+        render_char(r, '=');
+        render_char(r, '\"');
+        render_str(r, x->value);
+        render_char(r, '\"');
+    }
     render_char(r, '>');
     render_content(r, n);
     render_char(r, '<');
@@ -270,7 +280,11 @@ void attr_alloc(attr_buffer* b, int ask)
 {
     int space = b->size - b->used;
     if (space >= ask) return;
-    assert(0);
+    int size2 = (b->size + 1000 + ask) * 2;
+    attr* buf2 = malloc(size2 * sizeof(attr));
+    memcpy(buf2, b->attrs, b->used * sizeof(attr));
+    free(b->attrs);
+    b->attrs = buf2;
 }
 
 void lexeme(char* msg, document* d, str s)
@@ -302,9 +316,25 @@ str parse_attrval(document* d)
 {
     trim(d);
     if (peek(d) != '=') return start_length(0,0);
+    skip(d, 1);
     trim(d);
-    return parse_name(d);
+    char c = peek(d);
+    if (c == '\"' || c == '\'')
+    {
+        skip(d, 1);
+        int start = d->cursor;
+        if (!find(d, c))
+        {
+            d->error_message = _strdup("Couldn't find closing attribute bit");
+            return start_length(0, 0);
+        }
+        skip(d, 1);
+        return start_end(start, d->cursor - 1);
+    }
+    else
+        return parse_name(d);
 }
+
 
 
 // seen a tag name, now looking for attributes terminated by >
@@ -313,7 +343,15 @@ str parse_attributes(document* d)
 {
     str res;
     res.start = d->attrs.used;
-    // do attribute parsing here
+    for (int i = 0; ; i++)
+    {
+        str name = parse_name(d);
+        if (name.length == 0) break;
+        attr_alloc(&d->attrs, 1);
+        d->attrs.attrs[d->attrs.used].name = name;
+        d->attrs.attrs[d->attrs.used].value = parse_attrval(d);
+        d->attrs.used++;
+    }
     res.length = d->attrs.used - res.start;
     return res;
 }
@@ -328,20 +366,25 @@ void parse_tag(document* d)
     d->nodes.used_back++;
     int me = d->nodes.size - d->nodes.used_back;
 
+    d->nodes.nodes[me].outer.start = d->cursor;
     char c = get(d);
     assert(c == '<');
-
-    d->nodes.nodes[me].outer.start = d->cursor;
+    if (peek(d) == '?') skip(d, 1);
     d->nodes.nodes[me].name = parse_name(d);
     d->nodes.nodes[me].attrs = parse_attributes(d);
 
-    c = peek(d);
-    if ((c == '/' || c == '?') && peekAt(d, 1) == '>')
+    c = get(d);
+    if ((c == '/' || c == '?') && peek(d) == '>')
     {
-        skip(d, 2);
+        skip(d, 1);
         d->nodes.nodes[me].nodes = start_length(0, 0);
         d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
         d->nodes.nodes[me].inner = start_length(d->cursor, 0);
+        return;
+    }
+    else if (c != '>')
+    {
+        d->error_message = _strdup("Gunk at the end of the tag");
         return;
     }
     d->nodes.nodes[me].inner.start = d->cursor;
@@ -358,7 +401,8 @@ void parse_tag(document* d)
         trim(d);
         d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
         if (close.length == d->nodes.nodes[me].name.length &&
-            memcmp(&d->body[close.start], &d->body[d->nodes.nodes[me].name.start], close.length) == 0)
+            memcmp(&d->body[close.start], &d->body[d->nodes.nodes[me].name.start], close.length) == 0 &&
+            get(d) == '>');
             return;
         d->error_message = _strdup("Mismatch in closing tags");
         return;
@@ -422,14 +466,6 @@ document* document_parse(char* s, int slen)
     d->nodes.nodes[0].inner = start_length(0, slen);
     d->nodes.nodes[0].attrs = start_length(0, 0);
     d->nodes.nodes[0].nodes = parse_content(d);
-
-    node* me = &d->nodes.nodes[0];
-//    printf("Got %i %i\n", me->nodes.start, me->nodes.length);
-    assert(me->nodes.start == 1 && me->nodes.length == 1);
-
-    me = &d->nodes.nodes[1];
-//    printf("Got %i %i\n", me->nodes.start, me->nodes.length);
-    assert(me->nodes.length == 0);
 
     if (d->cursor < d->length && d->error_message == NULL)
     {
