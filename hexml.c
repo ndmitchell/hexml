@@ -10,7 +10,7 @@ typedef int bool;
 /////////////////////////////////////////////////////////////////////
 // TYPES
 
-int static inline end(str s){return s.start + s.length;}
+int static inline end(str s) { return s.start + s.length; }
 
 str static inline start_length(int32_t start, int32_t length)
 {
@@ -193,6 +193,7 @@ attr* node_attributes(document* d, node* n, int* res)
 attr* node_attributeBy(document* d, node* n, char* s, int slen)
 {
     assert(0);
+    return NULL;
 }
 
 // Search for given strings within a node
@@ -213,6 +214,7 @@ node* node_firstChildBy(document* d, node* n, char* s, int slen)
 node* node_nextChildBy(document* d, node* parent, node* prev, char* s, int slen)
 {
     assert(0);
+    return NULL;
 }
 
 
@@ -299,7 +301,6 @@ str parse_name(document* d)
 str parse_attrval(document* d)
 {
     trim(d);
-    str res;
     if (peek(d) != '=') return start_length(0,0);
     trim(d);
     return parse_name(d);
@@ -323,13 +324,14 @@ str parse_content(document* d);
 // Add a new entry into tag, am at a '<'
 void parse_tag(document* d)
 {
+    node_alloc(&d->nodes, 1);
+    d->nodes.used_back++;
+    int me = d->nodes.size - d->nodes.used_back;
+
     char c = get(d);
     assert(c == '<');
 
-    node_alloc(&d->nodes, 1);
-    int me = d->nodes.used_back;
-    d->nodes.used_back++;
-
+    d->nodes.nodes[me].outer.start = d->cursor;
     d->nodes.nodes[me].name = parse_name(d);
     d->nodes.nodes[me].attrs = parse_attributes(d);
 
@@ -338,9 +340,13 @@ void parse_tag(document* d)
     {
         skip(d, 2);
         d->nodes.nodes[me].nodes = start_length(0, 0);
+        d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
+        d->nodes.nodes[me].inner = start_length(d->cursor, 0);
         return;
     }
+    d->nodes.nodes[me].inner.start = d->cursor;
     d->nodes.nodes[me].nodes = parse_content(d);
+    d->nodes.nodes[me].inner.length = start_end(d->nodes.nodes[me].inner.start, d->cursor).length;
 
     if (d->error_message != NULL) return;
     if (peek(d) == '<' && peekAt(d, 1) == '/')
@@ -350,13 +356,14 @@ void parse_tag(document* d)
         lexeme("openning tag", d, d->nodes.nodes[me].name);
         lexeme("closing tag", d, close);
         trim(d);
+        d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
         if (close.length == d->nodes.nodes[me].name.length &&
             memcmp(&d->body[close.start], &d->body[d->nodes.nodes[me].name.start], close.length) == 0)
             return;
-        d->error_message = strdup("Mismatch in closing tags");
+        d->error_message = _strdup("Mismatch in closing tags");
         return;
     }
-    d->error_message = strdup("Weirdness when trying to close tags");
+    d->error_message = _strdup("Weirdness when trying to close tags");
 }
 
 // Parser until </, return the index of your node children
@@ -427,7 +434,7 @@ document* document_parse(char* s, int slen)
     if (d->cursor < d->length && d->error_message == NULL)
     {
         printf("%i vs %i\n", d->cursor, d->length);
-        d->error_message = strdup("Trailing junk at the end of the document");
+        d->error_message = _strdup("Trailing junk at the end of the document");
     }
     return d;
 }
