@@ -460,26 +460,34 @@ str parse_content(document* d)
     return res;
 }
 
+typedef struct
+{
+    document document;
+    attr attrs[1000];
+    node nodes[1000];
+} buffer;
+
 document* document_parse(char* s, int slen)
 {
     if (slen == -1) slen = strlen(s);
     assert(s[slen] == 0);
     init_parse_table();
 
-    document* d = malloc(sizeof(document));
+    buffer* buf = malloc(sizeof(buffer));
+    document* d = &buf->document;
     d->body = s;
     d->cursor = s;
     d->end = &s[slen];
     d->error_message = NULL;
-    d->attrs.size = 0;
+    d->attrs.size = 1000;
     d->attrs.used = 0;
-    d->attrs.attrs = NULL;
+    d->attrs.attrs = buf->attrs;
     d->attrs.alloc = NULL;
     d->nodes.size = 1000;
     d->nodes.used_back = 0;
     d->nodes.used_front = 1;
-    d->nodes.nodes = malloc(sizeof(node) * 1000);
-    d->nodes.alloc = d->nodes.nodes;
+    d->nodes.nodes = buf->nodes;
+    d->nodes.alloc = NULL;
 
     d->nodes.nodes[0].name = start_length(0, 0);
     d->nodes.nodes[0].outer = start_length(0, slen);
