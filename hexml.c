@@ -62,14 +62,17 @@ struct document
     char* body; // pointer to initial argument, not owned by us
 
     // things only used while parsing
-    int cursor; // pointer to where we are in body
-    int length; // total length of body
-    // if cursor is >= length we have gone past the end
+    char* cursor; // pointer to where we are in body
+    char* end; // pointer to one past the last char
+    // if cursor is > end we have gone past the end
 
     char* error_message;
     node_buffer nodes;
     attr_buffer attrs;
 };
+
+int static inline doc_length(document* d) { return d->end - d->body; }
+int static inline doc_position(document* d) { return d->cursor - d->body; }
 
 
 /////////////////////////////////////////////////////////////////////
@@ -108,7 +111,7 @@ void static inline bound_str(char* msg, str s, int mn, int mx)
 
 void render_str(render* r, str s)
 {
-    bound_str("render_str", s, 0, r->d->length);
+    bound_str("render_str", s, 0, doc_length(r->d));
     render_char(r, '[');
     for (int i = 0; i < s.length; i++)
         render_char(r, r->d->body[s.start + i]);
@@ -119,7 +122,7 @@ void render_tag(render* r, node* n);
 
 void render_content(render* r, node* n)
 {
-    bound_str("render_conent inner", n->inner, 0, r->d->length);
+    bound_str("render_conent inner", n->inner, 0, doc_length(r->d));
     bound_str("render_conent nodes", n->nodes, 0, r->d->nodes.used_front);
     bound_str("render_conent attrs", n->attrs, 0, r->d->attrs.used);
 
@@ -257,15 +260,10 @@ bool static inline is_space(char c) { return is(c, tag_space); }
 /////////////////////////////////////////////////////////////////////
 // PARSER COMBINATORS
 
-char static inline peekAt(document* d, int i)
-{
-    int j = d->cursor + i;
-    return j >= d->length ? 0 : d->body[j];
-}
-
-void static inline skip(document* d, int i){d->cursor += i;}
-char static inline peek(document* d){return peekAt(d, 0);}
-char static inline get(document* d){char c = peek(d); skip(d, 1); return c;}
+char static inline peekAt(document* d, int i) { return d->cursor[i]; }
+void static inline skip(document* d, int i) { d->cursor += i; }
+char static inline peek(document* d) { return peekAt(d, 0); }
+char static inline get(document* d) { char c = peek(d); skip(d, 1); return c; }
 
 // Remove whitespace characters from the cursor while they are still whitespace
 void static inline trim(document* d)
@@ -277,16 +275,15 @@ void static inline trim(document* d)
 // Find this character form the cursor onwards, if true adjust the cursor to that char, otherwise leave it at the end
 bool find(document* d, char c)
 {
-    char* start = &d->body[d->cursor];
-    char* end = memchr(start, c, d->length - d->cursor);
-    if (end == NULL)
+    char* x = memchr(d->cursor, c, d->end - d->cursor);
+    if (x == NULL)
     {
-        d->cursor = d->length;
+        d->cursor = d->end;
         return 0;
     }
     else
     {
-        d->cursor += end - start;
+        d->cursor = x;
         return 1;
     }
 }
@@ -318,15 +315,13 @@ void attr_alloc(attr_buffer* b, int ask)
 str parse_name(document* d)
 {
     trim(d);
-    str res;
-    res.start = d->cursor;
+    int start = doc_position(d);
     if (!is_name1(peek(d)))
-        return start_length(d->cursor, 0);
+        return start_length(start, 0);
     skip(d, 1);
     while (is_name(peek(d)))
         skip(d, 1);
-    res.length = d->cursor - res.start;
-    return res;
+    return start_end(start, doc_position(d));
 }
 
 str parse_attrval(document* d)
@@ -346,7 +341,7 @@ str parse_attrval(document* d)
             return start_length(0, 0);
         }
         skip(d, 1);
-        return start_end(start, d->cursor - 1);
+        return start_end(start, doc_position(d) - 1);
     }
     else
         return parse_name(d);
@@ -383,7 +378,7 @@ void parse_tag(document* d)
     d->nodes.used_back++;
     int me = d->nodes.size - d->nodes.used_back;
 
-    d->nodes.nodes[me].outer.start = d->cursor;
+    d->nodes.nodes[me].outer.start = doc_position(d);
     char c = get(d);
     assert(c == '<');
     if (peek(d) == '?') skip(d, 1);
@@ -395,8 +390,8 @@ void parse_tag(document* d)
     {
         skip(d, 1);
         d->nodes.nodes[me].nodes = start_length(0, 0);
-        d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
-        d->nodes.nodes[me].inner = start_length(d->cursor, 0);
+        d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, doc_position(d)).length;
+        d->nodes.nodes[me].inner = start_length(doc_position(d), 0);
         return;
     }
     else if (c != '>')
@@ -404,23 +399,23 @@ void parse_tag(document* d)
         d->error_message = _strdup("Gunk at the end of the tag");
         return;
     }
-    d->nodes.nodes[me].inner.start = d->cursor;
+    d->nodes.nodes[me].inner.start = doc_position(d);
     d->nodes.nodes[me].nodes = parse_content(d);
-    d->nodes.nodes[me].inner.length = start_end(d->nodes.nodes[me].inner.start, d->cursor).length;
+    d->nodes.nodes[me].inner.length = start_end(d->nodes.nodes[me].inner.start, doc_position(d)).length;
 
     if (d->error_message != NULL) return;
     if (peek(d) == '<' && peekAt(d, 1) == '/')
     {
         skip(d, 2);
         trim(d);
-        if (d->length - d->cursor >= d->nodes.nodes[me].name.length &&
-            memcmp(&d->body[d->cursor], &d->body[d->nodes.nodes[me].name.start], d->nodes.nodes[me].name.length) == 0)
+        if (d->end - d->cursor >= d->nodes.nodes[me].name.length &&
+            memcmp(d->cursor, &d->body[d->nodes.nodes[me].name.start], d->nodes.nodes[me].name.length) == 0)
         {
             skip(d, d->nodes.nodes[me].name.length);
             trim(d);
             if (get(d) == '>')
             {
-                d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
+                d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, doc_position(d)).length;
                 return;
             }
         }
@@ -464,12 +459,13 @@ str parse_content(document* d)
 document* document_parse(char* s, int slen)
 {
     if (slen == -1) slen = strlen(s);
+    assert(s[slen] == 0);
     init_parse_table();
 
     document* d = malloc(sizeof(document));
     d->body = s;
-    d->cursor = 0;
-    d->length = slen;
+    d->cursor = s;
+    d->end = &s[slen];
     d->error_message = NULL;
     d->attrs.size = 0;
     d->attrs.used = 0;
@@ -485,7 +481,7 @@ document* document_parse(char* s, int slen)
     d->nodes.nodes[0].attrs = start_length(0, 0);
     d->nodes.nodes[0].nodes = parse_content(d);
 
-    if (d->cursor < d->length && d->error_message == NULL)
+    if (d->cursor < d->end && d->error_message == NULL)
     {
         d->error_message = _strdup("Trailing junk at the end of the document");
     }
