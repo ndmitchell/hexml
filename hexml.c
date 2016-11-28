@@ -292,14 +292,14 @@ bool find(document* d, char c)
 /////////////////////////////////////////////////////////////////////
 // PARSING CODE
 
-void node_alloc(node_buffer* b, int ask)
+void static inline node_alloc(node_buffer* b, int ask)
 {
     int space = b->size - b->used_back - b->used_front;
     if (space >= ask) return;
     assert(0);
 }
 
-void attr_alloc(attr_buffer* b, int ask)
+void static inline attr_alloc(attr_buffer* b, int ask)
 {
     int space = b->size - b->used;
     if (space >= ask) return;
@@ -312,7 +312,7 @@ void attr_alloc(attr_buffer* b, int ask)
 
 // you now expect a name, perhaps preceeded by whitespace
 // the name may be empty
-str parse_name(document* d)
+str static inline parse_name(document* d)
 {
     trim(d);
     int start = doc_position(d);
@@ -324,7 +324,7 @@ str parse_name(document* d)
     return start_end(start, doc_position(d));
 }
 
-str parse_attrval(document* d)
+str static inline parse_attrval(document* d)
 {
     trim(d);
     if (peek(d) != '=') return start_length(0,0);
@@ -351,7 +351,7 @@ str parse_attrval(document* d)
 
 // seen a tag name, now looking for attributes terminated by >
 // puts the attributes it finds in the attribute buffer
-str parse_attributes(document* d)
+str static inline parse_attributes(document* d)
 {
     str res;
     res.start = d->attrs.used;
@@ -372,7 +372,7 @@ str parse_content(document* d);
 
 
 // Add a new entry into tag, am at a '<'
-void parse_tag(document* d)
+void static inline parse_tag(document* d)
 {
     node_alloc(&d->nodes, 1);
     d->nodes.used_back++;
@@ -426,6 +426,7 @@ void parse_tag(document* d)
 }
 
 // Parser until </, return the index of your node children
+// Not inline as it is recursive
 str parse_content(document* d)
 {
     int before = d->nodes.used_back;
