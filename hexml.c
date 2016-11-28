@@ -31,6 +31,7 @@ typedef struct
     int size;
     int used;
     attr* attrs; // dynamically allocated buffer
+    attr* alloc; // what to call free on
 } attr_buffer;
 
 
@@ -54,6 +55,7 @@ typedef struct
     int used_front; // front entries, stored for good
     int used_back; // back entries, stack based, copied into front
     node* nodes; // dynamically allocated buffer
+    node* alloc; // what to call free on
 } node_buffer;
 
 
@@ -182,8 +184,8 @@ str node_outer(node* n){return n->outer;}
 void document_free(document* d)
 {
     free(d->error_message);
-    free(d->nodes.nodes);
-    free(d->attrs.attrs);
+    free(d->nodes.alloc);
+    free(d->attrs.alloc);
     free(d);
 }
 
@@ -306,8 +308,9 @@ void static inline attr_alloc(attr_buffer* b, int ask)
     int size2 = (b->size + 1000 + ask) * 2;
     attr* buf2 = malloc(size2 * sizeof(attr));
     memcpy(buf2, b->attrs, b->used * sizeof(attr));
-    free(b->attrs);
+    free(b->alloc);
     b->attrs = buf2;
+    b->alloc = buf2;
 }
 
 // you now expect a name, perhaps preceeded by whitespace
@@ -471,10 +474,12 @@ document* document_parse(char* s, int slen)
     d->attrs.size = 0;
     d->attrs.used = 0;
     d->attrs.attrs = NULL;
+    d->attrs.alloc = NULL;
     d->nodes.size = 1000;
     d->nodes.used_back = 0;
     d->nodes.used_front = 1;
     d->nodes.nodes = malloc(sizeof(node) * 1000);
+    d->nodes.alloc = d->nodes.nodes;
 
     d->nodes.nodes[0].name = start_length(0, 0);
     d->nodes.nodes[0].outer = start_length(0, slen);
