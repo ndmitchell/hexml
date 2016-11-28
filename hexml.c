@@ -226,6 +226,35 @@ node* node_nextChildBy(document* d, node* parent, node* prev, char* s, int slen)
 
 
 /////////////////////////////////////////////////////////////////////
+// PARSE TABLE
+
+const char tag_name1 = 0x1;
+const char tag_name = 0x2;
+const char tag_space = 0x4;
+
+char parse_table[256];
+
+void init_parse_table()
+{
+    static bool done = 0;
+    if (done) return;
+    for (int i = 0; i < 256; i++)
+    {
+        bool name1 = i == ':' || i == '_' || (i >= 'a' && i <= 'z') || (i >= 'A' && i <= 'Z');
+        bool name = name1 || i == '-' || (i >= '0' && i <= '9');
+        bool space = i == ' ' || i == '\t' || i == '\r' || i == '\n';
+        parse_table[i] = (name1 ? tag_name1 : 0) | (name ? tag_name : 0) | (space ? tag_space : 0);
+    }
+    done = 1;
+}
+
+bool static inline is(char c, char tag) { return parse_table[c] & tag; }
+bool static inline is_name1(char c) { return is(c, tag_name1); }
+bool static inline is_name(char c) { return is(c, tag_name); }
+bool static inline is_space(char c) { return is(c, tag_space); }
+
+
+/////////////////////////////////////////////////////////////////////
 // PARSER COMBINATORS
 
 char static inline peekAt(document* d, int i)
@@ -237,8 +266,6 @@ char static inline peekAt(document* d, int i)
 void static inline skip(document* d, int i){d->cursor += i;}
 char static inline peek(document* d){return peekAt(d, 0);}
 char static inline get(document* d){char c = peek(d); skip(d, 1); return c;}
-
-bool static inline is_space(char c){ return c == ' ' || c == '\t' || c == '\r' || c == '\n';}
 
 // Remove whitespace characters from the cursor while they are still whitespace
 void static inline trim(document* d)
@@ -286,15 +313,6 @@ void attr_alloc(attr_buffer* b, int ask)
     b->attrs = buf2;
 }
 
-int static inline isName(char c)
-{
-    return
-        (c >= 'a' && c <= 'z') ||
-        (c >= 'A' && c <= 'Z') ||
-        (c >= '0' && c <= '9') ||
-        c == '_' || c == '-';
-}
-
 // you now expect a name, perhaps preceeded by whitespace
 // the name may be empty
 str parse_name(document* d)
@@ -302,8 +320,11 @@ str parse_name(document* d)
     trim(d);
     str res;
     res.start = d->cursor;
-    while (isName(peek(d)))
-        get(d);
+    if (!is_name1(peek(d)))
+        return start_length(d->cursor, 0);
+    skip(d, 1);
+    while (is_name(peek(d)))
+        skip(d, 1);
     res.length = d->cursor - res.start;
     return res;
 }
@@ -443,6 +464,7 @@ str parse_content(document* d)
 document* document_parse(char* s, int slen)
 {
     if (slen == -1) slen = strlen(s);
+    init_parse_table();
 
     document* d = malloc(sizeof(document));
     d->body = s;
