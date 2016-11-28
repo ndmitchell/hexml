@@ -270,7 +270,7 @@ char static inline get(document* d) { char c = peek(d); skip(d, 1); return c; }
 // Remove whitespace characters from the cursor while they are still whitespace
 void static inline trim(document* d)
 {
-    while (isspace(peek(d)))
+    while (is_space(peek(d)))
         skip(d, 1);
 }
 
