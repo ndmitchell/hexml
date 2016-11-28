@@ -124,7 +124,6 @@ void render_content(render* r, node* n)
     bound_str("render_conent attrs", n->attrs, 0, r->d->attrs.used);
 
     int done = n->inner.start;
-    printf("%i\n", n->nodes.length);
     for (int i = 0; i < n->nodes.length; i++)
     {
         node* x = &r->d->nodes.nodes[n->nodes.start + i];
@@ -164,8 +163,6 @@ int document_render(document* d, char* buffer, int length)
     r.buffer = buffer;
     r.length = length;
     r.cursor = 0;
-    node* me = document_node(d);
-    assert(me->nodes.start == 1 && me->nodes.length == 1);
     render_content(&r, document_node(d));
     return r.cursor;
 }
@@ -241,8 +238,10 @@ void static inline skip(document* d, int i){d->cursor += i;}
 char static inline peek(document* d){return peekAt(d, 0);}
 char static inline get(document* d){char c = peek(d); skip(d, 1); return c;}
 
+bool static inline is_space(char c){ return c == ' ' || c == '\t' || c == '\r' || c == '\n';}
+
 // Remove whitespace characters from the cursor while they are still whitespace
-void trim(document* d)
+void static inline trim(document* d)
 {
     while (isspace(peek(d)))
         skip(d, 1);
@@ -287,15 +286,13 @@ void attr_alloc(attr_buffer* b, int ask)
     b->attrs = buf2;
 }
 
-void lexeme(char* msg, document* d, str s)
+int static inline isName(char c)
 {
-    if (1)
-        printf("Lexeme: %s, %i:%i, %.*s\n", msg, s.start, s.length, s.length, &d->body[s.start]);
-}
-
-int isName(char c)
-{
-    return isalnum(c) || c == '?';
+    return
+        (c >= 'a' && c <= 'z') ||
+        (c >= 'A' && c <= 'Z') ||
+        (c >= '0' && c <= '9') ||
+        c == '_' || c == '-';
 }
 
 // you now expect a name, perhaps preceeded by whitespace
@@ -308,7 +305,6 @@ str parse_name(document* d)
     while (isName(peek(d)))
         get(d);
     res.length = d->cursor - res.start;
-    lexeme("parse_name", d, res);
     return res;
 }
 
@@ -395,15 +391,18 @@ void parse_tag(document* d)
     if (peek(d) == '<' && peekAt(d, 1) == '/')
     {
         skip(d, 2);
-        str close = parse_name(d);
-        lexeme("openning tag", d, d->nodes.nodes[me].name);
-        lexeme("closing tag", d, close);
         trim(d);
-        d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
-        if (close.length == d->nodes.nodes[me].name.length &&
-            memcmp(&d->body[close.start], &d->body[d->nodes.nodes[me].name.start], close.length) == 0 &&
-            get(d) == '>');
-            return;
+        if (d->length - d->cursor >= d->nodes.nodes[me].name.length &&
+            memcmp(&d->body[d->cursor], &d->body[d->nodes.nodes[me].name.start], d->nodes.nodes[me].name.length) == 0)
+        {
+            skip(d, d->nodes.nodes[me].name.length);
+            trim(d);
+            if (get(d) == '>')
+            {
+                d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, d->cursor).length;
+                return;
+            }
+        }
         d->error_message = _strdup("Mismatch in closing tags");
         return;
     }
@@ -428,17 +427,14 @@ str parse_content(document* d)
         }
         else
         {
-            printf("parsing a tag\n");
             parse_tag(d);
         }
     }
     int diff = d->nodes.used_back - before;
     node_alloc(&d->nodes, diff);
     str res = start_length(d->nodes.used_front, diff);
-
-    printf("res %i %i\n", res.start, res.length);
     for (int i = 0; i < diff; i++)
-        d->nodes.nodes[d->nodes.used_front + i] = d->nodes.nodes[d->nodes.size - d->nodes.used_back - i];
+        d->nodes.nodes[d->nodes.used_front + i] = d->nodes.nodes[d->nodes.size - d->nodes.used_back + diff - 1 - i];
     d->nodes.used_front += diff;
     d->nodes.used_back -= diff;
     return res;
@@ -469,7 +465,6 @@ document* document_parse(char* s, int slen)
 
     if (d->cursor < d->length && d->error_message == NULL)
     {
-        printf("%i vs %i\n", d->cursor, d->length);
         d->error_message = _strdup("Trailing junk at the end of the document");
     }
     return d;
