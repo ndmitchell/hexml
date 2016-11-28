@@ -334,7 +334,7 @@ str static inline parse_attrval(document* d)
     if (c == '\"' || c == '\'')
     {
         skip(d, 1);
-        int start = d->cursor;
+        int start = doc_position(d);
         if (!find(d, c))
         {
             d->error_message = _strdup("Couldn't find closing attribute bit");
