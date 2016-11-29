@@ -34,16 +34,6 @@ typedef struct
     attr* alloc; // what to call free on
 } attr_buffer;
 
-
-struct node
-{
-    str name; // tag name, e.g. <[foo]>
-    str outer; // outer text, [<foo>bar</foo>]
-    str inner; // inner text, <foo>[bar]</foo>
-    str attrs; // all the attributes, in the attribute buffer
-    str nodes; // all the nodes, in the node buffer
-};
-
 typedef struct
 {
     // have a cursor at the front, which is all the stuff I have written out, final
@@ -178,8 +168,6 @@ int document_render(document* d, char* buffer, int length)
 
 char* document_error(document* d){return d->error_message;}
 node* document_node(document* d){return &d->nodes.nodes[0];}
-str node_inner(node* n){return n->inner;}
-str node_outer(node* n){return n->outer;}
 
 void document_free(document* d)
 {

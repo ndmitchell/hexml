@@ -2,7 +2,6 @@
 #include <stdint.h>
 
 typedef struct document document;
-typedef struct node node;
 
 // Pair of indexes into the input string
 typedef struct
@@ -16,6 +15,15 @@ typedef struct
     str name;
     str value;
 } attr;
+
+typedef struct
+{
+    str name; // tag name, e.g. <[foo]>
+    str inner; // inner text, <foo>[bar]</foo>
+    str outer; // outer text, [<foo>bar</foo>]
+    str attrs; // all the attributes, in the attribute buffer (not usable)
+    str nodes; // all the nodes, in the node buffer (not usable)
+} node;
 
 // Convention: if slen can be -1 for nul-terminated, or given explicitly
 
@@ -35,10 +43,6 @@ char* document_error(document* d);
 
 // return the root node of the document - imagine the document is wrapped in <>$DOC</> tags
 node* document_node(document* d);
-
-// Get the span of a node
-str node_inner(node* n);
-str node_outer(node* n);
 
 // List all items within a node
 node* node_children(document* d, node* n, int* res);
