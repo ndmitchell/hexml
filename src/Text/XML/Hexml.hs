@@ -8,6 +8,7 @@ module Text.XML.Hexml(
     nodeAttributeBy, nodeChildrenBy
     ) where
 
+import Control.Applicative
 import Control.Monad
 import Data.Int
 import Foreign.C
@@ -21,6 +22,7 @@ import Data.Tuple.Extra
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Unsafe as BS
 import qualified Data.ByteString.Internal as BS
+import Prelude
 
 data CDocument
 data CNode
