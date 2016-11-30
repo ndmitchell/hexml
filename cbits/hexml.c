@@ -249,13 +249,13 @@ static inline bool is_space(char c) { return is(c, tag_space); }
 /////////////////////////////////////////////////////////////////////
 // PARSER COMBINATORS
 
-char static inline peekAt(document* d, int i) { return d->cursor[i]; }
-void static inline skip(document* d, int i) { d->cursor += i; }
-char static inline peek(document* d) { return peekAt(d, 0); }
-char static inline get(document* d) { char c = peek(d); skip(d, 1); return c; }
+static inline char peekAt(document* d, int i) { return d->cursor[i]; }
+static inline void skip(document* d, int i) { d->cursor += i; }
+static inline char peek(document* d) { return peekAt(d, 0); }
+static inline char get(document* d) { char c = peek(d); skip(d, 1); return c; }
 
 // Remove whitespace characters from the cursor while they are still whitespace
-void static inline trim(document* d)
+static inline void trim(document* d)
 {
     while (is_space(peek(d)))
         skip(d, 1);
@@ -281,7 +281,7 @@ bool find(document* d, char c)
 /////////////////////////////////////////////////////////////////////
 // PARSING CODE
 
-void static inline node_alloc(node_buffer* b, int ask)
+static inline void node_alloc(node_buffer* b, int ask)
 {
     int space = b->size - b->used_back - b->used_front;
     if (space >= ask) return;
@@ -296,7 +296,7 @@ void static inline node_alloc(node_buffer* b, int ask)
     b->alloc = buf2;
 }
 
-void static inline attr_alloc(attr_buffer* b, int ask)
+static inline void attr_alloc(attr_buffer* b, int ask)
 {
     int space = b->size - b->used;
     if (space >= ask) return;
