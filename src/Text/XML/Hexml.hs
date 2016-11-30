@@ -1,5 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 
+-- | A module for first-approximation parsing of XML.
+--   Note that entities, e.g. @&amp;@, are not expanded.
 module Text.XML.Hexml(
     Document, Node, Attribute(..),
     documentParse, documentRender, documentNode,
@@ -56,6 +58,7 @@ foreign import ccall node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -
 foreign import ccall node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
 foreign import ccall node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
 
+-- | An XML document, created by 'documentParse'.
 data Document = Document BS.ByteString (ForeignPtr CDocument)
 
 data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
