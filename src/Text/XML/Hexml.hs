@@ -66,7 +66,7 @@ data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 --   @hello=\"world\"@ would produce @Attribute \"hello\" \"world\"@.
 data Attribute = Attribute
     {attributeName :: BS.ByteString
-    ,attributeVaule :: BS.ByteString
+    ,attributeValue :: BS.ByteString
     } deriving (Show, Eq, Ord)
 
 instance Show Node where
