@@ -10,9 +10,9 @@ typedef int bool;
 /////////////////////////////////////////////////////////////////////
 // TYPES
 
-int static inline end(str s) { return s.start + s.length; }
+static inline int end(str s) { return s.start + s.length; }
 
-str static inline start_length(int32_t start, int32_t length)
+static inline str start_length(int32_t start, int32_t length)
 {
     if (start < 0 || length < 0) assert(0);
     str res;
@@ -21,7 +21,7 @@ str static inline start_length(int32_t start, int32_t length)
     return res;
 }
 
-str static inline start_end(int32_t start, int32_t end)
+static inline str start_end(int32_t start, int32_t end)
 {
     return start_length(start, end - start);
 }
@@ -63,8 +63,8 @@ struct document
     attr_buffer attrs;
 };
 
-int static inline doc_length(document* d) { return (int) (d->end - d->body); }
-int static inline doc_position(document* d) { return (int) (d->cursor - d->body); }
+static inline int doc_length(document* d) { return (int) (d->end - d->body); }
+static inline int doc_position(document* d) { return (int) (d->cursor - d->body); }
 
 
 /////////////////////////////////////////////////////////////////////
@@ -78,14 +78,14 @@ typedef struct
     int cursor;
 } render;
 
-void static inline render_char(render* r, char c)
+static inline void render_char(render* r, char c)
 {
     if (r->cursor < r->length)
         r->buffer[r->cursor] = c;
     r->cursor++;
 }
 
-void static inline bound(char* msg, int index, int mn, int mx)
+static inline void bound(char* msg, int index, int mn, int mx)
 {
     if (index < mn || index > mx)
     {
@@ -94,7 +94,7 @@ void static inline bound(char* msg, int index, int mn, int mx)
     }
 }
 
-void static inline bound_str(char* msg, str s, int mn, int mx)
+static inline void bound_str(char* msg, str s, int mn, int mx)
 {
     if (s.length < 0) assert(0);
     bound(msg, s.start, mn, mx);
@@ -244,22 +244,22 @@ void init_parse_table()
     done = 1;
 }
 
-bool static inline is(char c, char tag) { return parse_table[c] & tag; }
-bool static inline is_name1(char c) { return is(c, tag_name1); }
-bool static inline is_name(char c) { return is(c, tag_name); }
-bool static inline is_space(char c) { return is(c, tag_space); }
+static inline bool is(char c, char tag) { return parse_table[c] & tag; }
+static inline bool is_name1(char c) { return is(c, tag_name1); }
+static inline bool is_name(char c) { return is(c, tag_name); }
+static inline bool is_space(char c) { return is(c, tag_space); }
 
 
 /////////////////////////////////////////////////////////////////////
 // PARSER COMBINATORS
 
-char static inline peekAt(document* d, int i) { return d->cursor[i]; }
-void static inline skip(document* d, int i) { d->cursor += i; }
-char static inline peek(document* d) { return peekAt(d, 0); }
-char static inline get(document* d) { char c = peek(d); skip(d, 1); return c; }
+static inline char peekAt(document* d, int i) { return d->cursor[i]; }
+static inline void skip(document* d, int i) { d->cursor += i; }
+static inline char peek(document* d) { return peekAt(d, 0); }
+static inline char get(document* d) { char c = peek(d); skip(d, 1); return c; }
 
 // Remove whitespace characters from the cursor while they are still whitespace
-void static inline trim(document* d)
+static inline void trim(document* d)
 {
     while (is_space(peek(d)))
         skip(d, 1);
@@ -285,7 +285,7 @@ bool find(document* d, char c)
 /////////////////////////////////////////////////////////////////////
 // PARSING CODE
 
-void static inline node_alloc(node_buffer* b, int ask)
+static inline void node_alloc(node_buffer* b, int ask)
 {
     int space = b->size - b->used_back - b->used_front;
     if (space >= ask) return;
@@ -300,7 +300,7 @@ void static inline node_alloc(node_buffer* b, int ask)
     b->alloc = buf2;
 }
 
-void static inline attr_alloc(attr_buffer* b, int ask)
+static inline void attr_alloc(attr_buffer* b, int ask)
 {
     int space = b->size - b->used;
     if (space >= ask) return;
@@ -324,7 +324,7 @@ void set_error(document* d, char* msg)
 
 // you now expect a name, perhaps preceeded by whitespace
 // the name may be empty
-str static inline parse_name(document* d)
+static inline str parse_name(document* d)
 {
     int start = doc_position(d);
     if (!is_name1(peek(d)))
@@ -335,7 +335,7 @@ str static inline parse_name(document* d)
     return start_end(start, doc_position(d));
 }
 
-str static inline parse_attrval(document* d)
+static inline str parse_attrval(document* d)
 {
     trim(d);
     if (get(d) != '=')
@@ -368,7 +368,7 @@ str static inline parse_attrval(document* d)
 
 // seen a tag name, now looking for attributes terminated by >
 // puts the attributes it finds in the attribute buffer
-str static inline parse_attributes(document* d)
+static inline str parse_attributes(document* d)
 {
     int start = d->attrs.used;
     for (int i = 0; ; i++)
@@ -388,7 +388,7 @@ str parse_content(document* d);
 
 
 // Add a new entry into tag, am at a '<'
-void static inline parse_tag(document* d)
+static inline void parse_tag(document* d)
 {
     node_alloc(&d->nodes, 1);
     d->nodes.used_back++;
