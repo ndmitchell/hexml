@@ -58,7 +58,7 @@ data Document = Document BS.ByteString (ForeignPtr CDocument)
 
 data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 
-data Attribute = Attribute BS.ByteString BS.ByteString deriving Show
+data Attribute = Attribute BS.ByteString BS.ByteString deriving (Show, Eq, Ord)
 
 instance Show Document where
     show d = "Document " ++ show (BS.unpack $ nodeOuter $ documentNode d)

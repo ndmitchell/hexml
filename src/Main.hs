@@ -33,6 +33,16 @@ main = do
                 let Right d = documentParse r
                 when (r /= documentRender d) $ fail "Different after rerendering"
 
+    let Right doc = fmap documentNode $ documentParse "<test id=\"1\" extra=\"2\" /><test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
+    map nodeName (nodeChildren doc) === ["test","test","b","test","test"]
+    length (nodeChildrenBy doc "test") === 4
+    length (nodeChildrenBy doc "b") === 1
+    length (nodeChildrenBy doc "extra") === 0
+    nodeAttributes (head $ nodeChildren doc) === [Attribute "id" "1", Attribute "extra" "2"]
+    map (`nodeAttributeBy` "id") (nodeChildrenBy doc "test") === map (fmap (Attribute "id")) [Just "1", Just "2", Just "4", Nothing]
+
+
+a === b = if a == b then putStrLn "success" else fail "mismatch"
 
 rerender :: Document -> BS.ByteString
 rerender = contents . documentNode
