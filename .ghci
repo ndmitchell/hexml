@@ -3,3 +3,15 @@
 :load Main
 
 :def test \xs -> return $ ":main " ++ xs
+
+:{
+:def docs_ const $ return $ unlines
+        [":!cabal configure"
+        ,":!cabal haddock"]
+:}
+
+:{
+:def docs const $ return $ unlines
+        [":docs_"
+        ,":!start dist\\doc\\html\\hexml\\Text-XML-Hexml.html"]
+:}
