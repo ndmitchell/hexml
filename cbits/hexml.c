@@ -195,9 +195,8 @@ attr* node_attributes(document* d, node* n, int* res)
 attr* node_attributeBy(document* d, node* n, char* s, int slen)
 {
     if (slen == -1) slen = strlen(s);
-    int i = n->attrs.start;
-    int limit = end(n->attrs);
-    for (i = n->attrs.start; i < limit; i++)
+    const int limit = end(n->attrs);
+    for (int i = n->attrs.start; i < limit; i++)
     {
         attr* r = &d->attrs.attrs[i];
         if (r->name.length == slen && memcmp(s, &d->body[r->name.start], slen) == 0)
@@ -211,7 +210,7 @@ node* node_childBy(document* d, node* parent, node* prev, char* s, int slen)
 {
     if (slen == -1) slen = strlen(s);
     int i = prev == NULL ? parent->nodes.start : prev + 1 - d->nodes.nodes;
-    int limit = end(parent->nodes);
+    const int limit = end(parent->nodes);
     for (; i < limit; i++)
     {
         node* r = &d->nodes.nodes[i];
