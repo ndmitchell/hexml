@@ -78,8 +78,8 @@ touchBS = touchForeignPtr . fst3 . BS.toForeignPtr
 
 
 -- | Parse a ByteString as an XML document, returning a 'Left' error message, or a 'Right' document.
---   Note that the returned node will have a 'name' of @\"\"@, no attributes, and content as per the document.
---   Often the first child will be the @\<?xml ... ?\>@ element. For documents which comprise a single
+--   Note that the returned node will have a 'name' of @\"\"@, no 'attributes', and 'contents' as per the document.
+--   Often the first child will be the @\<?xml ... ?\>@ element. For documents which comprise an XML node and a single
 --   root element, use @'children' n !! 1@.
 parse :: BS.ByteString -> Either BS.ByteString Node
 parse src = do
@@ -190,7 +190,7 @@ attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
         touchBS src
         return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
 
--- | Find the starting location of a node, the '<' character.
+-- | Find the starting location of a node, the @<@ character.
 --   The first character will be reported as @(line 1,column 1)@, because thats
 --   how error messages typically do it.
 location :: Node -> (Int, Int)
