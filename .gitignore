@@ -1,6 +1,10 @@
 /dist/
 *.o
 *.prof
+*.suo
+*.opendb
+*.db
+*.user
 /.stack-work/
 /issues/
 /vs/x64/
