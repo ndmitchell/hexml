@@ -367,8 +367,7 @@ str static inline parse_attrval(document* d)
 // puts the attributes it finds in the attribute buffer
 str static inline parse_attributes(document* d)
 {
-    str res;
-    res.start = d->attrs.used;
+    int start = d->attrs.used;
     for (int i = 0; ; i++)
     {
         trim(d);
@@ -379,8 +378,7 @@ str static inline parse_attributes(document* d)
         d->attrs.attrs[d->attrs.used].value = parse_attrval(d);
         d->attrs.used++;
     }
-    res.length = d->attrs.used - res.start;
-    return res;
+    return start_end(start, d->attrs.used);
 }
 
 str parse_content(document* d);
