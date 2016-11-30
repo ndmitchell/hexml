@@ -43,6 +43,8 @@ main = do
     attributes (head $ children doc) === [Attribute "id" "1", Attribute "extra" "2"]
     map (`attributeBy` "id") (childrenBy doc "test") === map (fmap (Attribute "id")) [Just "1", Just "2", Just "4", Nothing]
 
+    Right _ <- return $ parse $ "<test " <> BS.unwords [BS.pack $ "x" ++ show i ++ "='value'" | i <- [1..10000]] <> " />"
+    return ()
 
 a === b = if a == b then putStrLn "success" else fail "mismatch"
 
