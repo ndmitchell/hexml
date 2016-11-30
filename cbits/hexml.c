@@ -486,11 +486,13 @@ str parse_content(document* d)
     return res;
 }
 
+// Based on looking at ~50Kb XML documents, they seem to have ~700 attributes
+// and ~300 nodes, so size appropriately to cope with that.
 typedef struct
 {
     document document;
     attr attrs[1000];
-    node nodes[1000];
+    node nodes[500];
 } buffer;
 
 document* document_parse(char* s, int slen)
@@ -509,7 +511,7 @@ document* document_parse(char* s, int slen)
     d->attrs.used = 0;
     d->attrs.attrs = buf->attrs;
     d->attrs.alloc = NULL;
-    d->nodes.size = 1000;
+    d->nodes.size = 500;
     d->nodes.used_back = 0;
     d->nodes.used_front = 1;
     d->nodes.nodes = buf->nodes;
