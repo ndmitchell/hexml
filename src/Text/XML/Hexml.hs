@@ -78,17 +78,19 @@ instance Show Node where
 --   Often the first child will be the @\<?xml ... ?\>@ element. For documents which comprise a single
 --   root element, use @'children' n !! 1@.
 parse :: BS.ByteString -> Either BS.ByteString Node
-parse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
-    doc <- document_parse str (fromIntegral len - 1)
-    err <- document_error doc
-    if err /= nullPtr then do
-        bs <- BS.packCString =<< document_error doc
-        document_free doc
-        return $ Left bs
-     else do
-        node <- document_node doc
-        doc <- newForeignPtr document_free_funptr doc
-        return $ Right $ Node src doc node
+parse src = do
+    let src0 = src <> BS.singleton '\0'
+    unsafePerformIO $ BS.unsafeUseAsCStringLen src0 $ \(str, len) -> do
+        doc <- document_parse str (fromIntegral len - 1)
+        err <- document_error doc
+        if err /= nullPtr then do
+            bs <- BS.packCString =<< document_error doc
+            document_free doc
+            return $ Left bs
+         else do
+            node <- document_node doc
+            doc <- newForeignPtr document_free_funptr doc
+            return $ Right $ Node src0 doc node
 
 -- | Given a node, rerender it to something with an equivalent parse tree.
 --   Mostly useful for debugging - if you want the real source document use 'outer' instead.
