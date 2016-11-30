@@ -12,6 +12,7 @@ char* readFile(char* file)
     int len = ftell(f);
     fseek(f, 0, SEEK_SET);
     char* res = malloc(len + 1);
+    assert(res);
     res[len] = 0;
     size_t n = fread(res, 1, len, f);
     assert(n == len);
@@ -31,6 +32,7 @@ void main(int argc, char **argv)
     {
         int len = node_render(doc, document_node(doc), NULL, 0);
         char* s = malloc(len + 1);
+        assert(s);
         node_render(doc, document_node(doc), s, len);
         s[len] = 0;
         printf("Parse successful\n"); // , %s\n", s);

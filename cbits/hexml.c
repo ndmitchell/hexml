@@ -291,6 +291,7 @@ void static inline node_alloc(node_buffer* b, int ask)
     if (space >= ask) return;
     int size2 = (b->size + 1000 + ask) * 2;
     node* buf2 = malloc(size2 * sizeof(node));
+    assert(buf2);
     memcpy(buf2, b->nodes, b->used_front * sizeof(node));
     memcpy(&buf2[size2 - b->used_back], &b->nodes[b->size - b->used_back], b->used_back * sizeof(node));
     free(b->alloc);
@@ -305,6 +306,7 @@ void static inline attr_alloc(attr_buffer* b, int ask)
     if (space >= ask) return;
     int size2 = (b->size + 1000 + ask) * 2;
     attr* buf2 = malloc(size2 * sizeof(attr));
+    assert(buf2);
     memcpy(buf2, b->attrs, b->used * sizeof(attr));
     free(b->alloc);
     b->size = size2;
@@ -316,6 +318,7 @@ void set_error(document* d, char* msg)
 {
     if (d->error_message != NULL) return; // keep the first error message
     d->error_message = malloc(strlen(msg)+1);
+    assert(d->error_message);
     strcpy(d->error_message, msg);
 }
 
@@ -511,6 +514,7 @@ document* document_parse(char* s, int slen)
     init_parse_table();
 
     buffer* buf = malloc(sizeof(buffer));
+    assert(buf);
     document* d = &buf->document;
     d->body = s;
     d->cursor = s;
