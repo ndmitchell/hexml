@@ -23,18 +23,18 @@ main :: IO ()
 main = do
     forM_ examples $ \(parses, src) -> do
         print src
-        case documentParse src of
+        case nodeParse src of
             Left err -> when parses $ fail $ "Unexpected parse failure, " ++ show err
             Right doc -> do
                 unless parses $ fail "Unexpected parse success"
-                let r = documentRender doc
+                let r = nodeRender doc
                 print r
                 print $ rerender doc
                 when (r /= rerender doc) $ fail "Different rerender"
-                let Right d = documentParse r
-                when (r /= documentRender d) $ fail "Different after rerendering"
+                let Right d = nodeParse r
+                when (r /= nodeRender d) $ fail "Different after rerendering"
 
-    let Right doc = fmap documentNode $ documentParse "<test id=\"1\" extra=\"2\" /><test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
+    let Right doc = nodeParse "<test id=\"1\" extra=\"2\" /><test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
     map nodeName (nodeChildren doc) === ["test","test","b","test","test"]
     length (nodeChildrenBy doc "test") === 4
     length (nodeChildrenBy doc "b") === 1
@@ -45,8 +45,8 @@ main = do
 
 a === b = if a == b then putStrLn "success" else fail "mismatch"
 
-rerender :: Document -> BS.ByteString
-rerender = contents . documentNode
+rerender :: Node -> BS.ByteString
+rerender = contents
     where
         contents x = BS.concat $ map (either validStr node) $ nodeContents x
         node x = "<" <> BS.unwords (validName (nodeName x) : map attr (nodeAttributes x)) <> ">" <>

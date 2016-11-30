@@ -3,8 +3,8 @@
 -- | A module for first-approximation parsing of XML.
 --   Note that entities, e.g. @&amp;@, are not expanded.
 module Text.XML.Hexml(
-    Document, Node, Attribute(..),
-    documentParse, documentRender, documentNode,
+    Node, Attribute(..),
+    nodeParse, nodeRender,
     nodeName, nodeInner, nodeOuter,
     nodeAttributes, nodeChildren, nodeContents,
     nodeAttributeBy, nodeChildrenBy
@@ -59,21 +59,16 @@ foreign import ccall node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> 
 foreign import ccall node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
 
 -- | An XML document, created by 'documentParse'.
-data Document = Document BS.ByteString (ForeignPtr CDocument)
-
 data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 
 data Attribute = Attribute BS.ByteString BS.ByteString deriving (Show, Eq, Ord)
-
-instance Show Document where
-    show d = "Document " ++ show (BS.unpack $ nodeOuter $ documentNode d)
 
 instance Show Node where
     show d = "Node " ++ show (BS.unpack $ nodeOuter d)
 
 
-documentParse :: BS.ByteString -> Either BS.ByteString Document
-documentParse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
+nodeParse :: BS.ByteString -> Either BS.ByteString Node
+nodeParse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
     doc <- document_parse str (fromIntegral len - 1)
     err <- document_error doc
     if err /= nullPtr then do
@@ -81,19 +76,14 @@ documentParse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.single
         document_free doc
         return $ Left bs
      else do
+        node <- document_node doc
         doc <- newForeignPtr document_free_funptr doc
-        return $ Right $ Document src doc
+        return $ Right $ Node src doc node
 
-documentRender :: Document -> BS.ByteString
-documentRender (Document _ doc) = unsafePerformIO $ withForeignPtr doc $ \d -> do
-    n <- document_node d
+nodeRender :: Node -> BS.ByteString
+nodeRender (Node _ doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     i <- node_render d n nullPtr 0
     BS.create (fromIntegral i) $ \ptr -> void $ node_render d n (castPtr ptr) i
-
-
-documentNode :: Document -> Node
-documentNode d@(Document src doc) = unsafePerformIO $ withForeignPtr doc $ \d -> do
-    Node src doc <$> document_node d
 
 applyStr :: BS.ByteString -> Str -> BS.ByteString
 applyStr bs Str{..} = BS.take (fromIntegral strLength) $ BS.drop (fromIntegral strStart) bs
