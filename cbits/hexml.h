@@ -34,9 +34,9 @@ document* document_parse(char* s, int slen);
 // Free the memory returned from document_parse.
 void document_free(document* d);
 
-// generate a fresh document with the same semantics
+// generate a fresh string with the same semantics as the node
 // requires an input buffer, returns the size of the rendered document
-int document_render(document* d, char* buffer, int length);
+int node_render(document* d, node* n, char* buffer, int length);
 
 // return either NULL (successful parse) or the error message
 char* document_error(document* d);

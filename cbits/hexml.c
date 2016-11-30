@@ -149,14 +149,17 @@ void render_tag(render* r, node* n)
     render_char(r, '>');
 }
 
-int document_render(document* d, char* buffer, int length)
+int node_render(document* d, node* n, char* buffer, int length)
 {
     render r;
     r.d = d;
     r.buffer = buffer;
     r.length = length;
     r.cursor = 0;
-    render_content(&r, document_node(d));
+    if (n->name.length == 0)
+        render_content(&r, n);
+    else
+        render_tag(&r, n);
     return r.cursor;
 }
 

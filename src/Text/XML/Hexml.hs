@@ -48,7 +48,7 @@ instance Storable Str where
 foreign import ccall document_parse :: CString -> CInt -> IO (Ptr CDocument)
 foreign import ccall document_free :: Ptr CDocument -> IO ()
 foreign import ccall "&document_free" document_free_funptr :: FunPtr (Ptr CDocument -> IO ())
-foreign import ccall document_render :: Ptr CDocument -> CString -> CInt -> IO CInt
+foreign import ccall node_render :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO CInt
 foreign import ccall document_error :: Ptr CDocument -> IO CString
 foreign import ccall document_node :: Ptr CDocument -> IO (Ptr CNode)
 
@@ -86,8 +86,9 @@ documentParse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.single
 
 documentRender :: Document -> BS.ByteString
 documentRender (Document _ doc) = unsafePerformIO $ withForeignPtr doc $ \d -> do
-    i <- document_render d nullPtr 0
-    BS.create (fromIntegral i) $ \ptr -> void $ document_render d (castPtr ptr) i
+    n <- document_node d
+    i <- node_render d n nullPtr 0
+    BS.create (fromIntegral i) $ \ptr -> void $ node_render d n (castPtr ptr) i
 
 
 documentNode :: Document -> Node
