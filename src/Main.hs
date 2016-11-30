@@ -14,6 +14,8 @@ examples =
     [(True, "<test id=bob>here<extra/>there</test>")
     ,(True, "<test /><close />")
     ,(True, "<test id=\"bob value\" another-attr=\"test with <\">here </test> more text at the end<close />")
+    ,(False, "<test></more>")
+    ,(False, "<test")
     ]
 
 main :: IO ()
@@ -41,7 +43,7 @@ rerender = contents . documentNode
                  "</" <> nodeName x <> ">"
         attr (Attribute a b) = validName a <> "=\"" <> validAttr b <> "\""
 
-        validName x | BS.all (\x -> isAlpha x) x = x
+        validName x | BS.all (\x -> isAlphaNum x || x `elem` ("-:_" :: String)) x = x
                     | otherwise = error "Invalid name"
         validAttr x | BS.notElem '\"' x = x
                     | otherwise = error "Invalid attribute"
