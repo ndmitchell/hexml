@@ -14,7 +14,7 @@ static inline int end(str s) { return s.start + s.length; }
 
 static inline str start_length(int32_t start, int32_t length)
 {
-    if (start < 0 || length < 0) assert(0);
+    assert(start >= 0 && length >= 0);
     str res;
     res.start = start;
     res.length = length;
@@ -87,16 +87,12 @@ static inline void render_char(render* r, char c)
 
 static inline void bound(const char* msg, int index, int mn, int mx)
 {
-    if (index < mn || index > mx)
-    {
-        //printf("Bounds checking failed %s, got %i, which should be in %i:%i\n", msg, index, mn, mx);
-        assert(0);
-    }
+    assert(index >= mn && index <= mx);
 }
 
 static inline void bound_str(const char* msg, str s, int mn, int mx)
 {
-    if (s.length < 0) assert(0);
+    assert(s.length >= 0);
     bound(msg, s.start, mn, mx);
     bound(msg, end(s), mn, mx);
 }
