@@ -532,7 +532,11 @@ document* document_parse(char* s, int slen)
     d->nodes.nodes[0].outer = start_length(0, slen);
     d->nodes.nodes[0].inner = start_length(0, slen);
     d->nodes.nodes[0].attrs = start_length(0, 0);
-    d->nodes.nodes[0].nodes = parse_content(d);
+    
+    // Introduce an intermediate result, otherwise behaviour is undefined
+    // because there is no guaranteed ordering between LHS and RHS evaluation
+    str content = parse_content(d);
+    d->nodes.nodes[0].nodes = content;
 
     if (d->cursor < d->end && d->error_message == NULL)
     {
