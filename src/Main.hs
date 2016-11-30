@@ -44,6 +44,7 @@ main = do
     map (`attributeBy` "id") (childrenBy doc "test") === map (fmap (Attribute "id")) [Just "1", Just "2", Just "4", Nothing]
 
     Right _ <- return $ parse $ "<test " <> BS.unwords [BS.pack $ "x" ++ show i ++ "='value'" | i <- [1..10000]] <> " />"
+    Right _ <- return $ parse $ BS.unlines $ replicate 10000 "<test x='value' />"
     return ()
 
 a === b = if a == b then putStrLn "success" else fail "mismatch"
