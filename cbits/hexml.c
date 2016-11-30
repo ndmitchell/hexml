@@ -85,21 +85,21 @@ static inline void render_char(render* r, char c)
     r->cursor++;
 }
 
-static inline void bound(const char* msg, int index, int mn, int mx)
+static inline void bound(int index, int mn, int mx)
 {
     assert(index >= mn && index <= mx);
 }
 
-static inline void bound_str(const char* msg, str s, int mn, int mx)
+static inline void bound_str(str s, int mn, int mx)
 {
     assert(s.length >= 0);
-    bound(msg, s.start, mn, mx);
-    bound(msg, end(s), mn, mx);
+    bound(s.start, mn, mx);
+    bound(end(s), mn, mx);
 }
 
 void render_str(render* r, str s)
 {
-    bound_str("render_str", s, 0, doc_length(r->d));
+    bound_str(s, 0, doc_length(r->d));
     for (int i = 0; i < s.length; i++)
         render_char(r, r->d->body[s.start + i]);
 }
@@ -108,9 +108,9 @@ void render_tag(render* r, const node* n);
 
 void render_content(render* r, const node* n)
 {
-    bound_str("render_conent inner", n->inner, 0, doc_length(r->d));
-    bound_str("render_conent nodes", n->nodes, 0, r->d->nodes.used_front);
-    bound_str("render_conent attrs", n->attrs, 0, r->d->attrs.used);
+    bound_str(n->inner, 0, doc_length(r->d));
+    bound_str(n->nodes, 0, r->d->nodes.used_front);
+    bound_str(n->attrs, 0, r->d->attrs.used);
 
     int done = n->inner.start;
     for (int i = 0; i < n->nodes.length; i++)
