@@ -130,16 +130,14 @@ nodeChildren (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
         res <- node_children d n count
         count <- fromIntegral <$> peek count
-        let sz = 2 * szNode
-        return [Node src doc $ plusPtr res $ i*sz | i <- [0..count-1]]
+        return [Node src doc $ plusPtr res $ i*szNode | i <- [0..count-1]]
 
 nodeAttributes :: Node -> [Attribute]
 nodeAttributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
         res <- node_attributes d n count
         count <- fromIntegral <$> peek count
-        let sz = 2 * szAttr
-        return [attrPeek src doc (plusPtr res $ i*sz) | i <- [0..count-1]]
+        return [attrPeek src doc $ plusPtr res $ i*szAttr | i <- [0..count-1]]
 
 nodeChildrenBy :: Node -> BS.ByteString -> [Node]
 nodeChildrenBy = node_firstChildBy `seq` node_nextChildBy `seq` undefined
