@@ -301,6 +301,7 @@ void static inline attr_alloc(attr_buffer* b, int ask)
     attr* buf2 = malloc(size2 * sizeof(attr));
     memcpy(buf2, b->attrs, b->used * sizeof(attr));
     free(b->alloc);
+    b->size = size2;
     b->attrs = buf2;
     b->alloc = buf2;
 }
