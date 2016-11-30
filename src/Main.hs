@@ -23,18 +23,15 @@ examples =
 main :: IO ()
 main = do
     forM_ examples $ \(parses, src) -> do
-        print src
         case parse src of
             Left err -> when parses $ fail $ "Unexpected parse failure, " ++ show err
             Right doc -> do
                 unless parses $ fail "Unexpected parse success"
                 checkFind doc
                 let r = render doc
-                print r
-                print $ rerender doc
-                when (r /= rerender doc) $ fail "Different rerender"
+                r === rerender doc
                 let Right d = parse r
-                when (r /= render d) $ fail "Different after rerendering"
+                r === render d
 
     let Right doc = parse "<test id=\"1\" extra=\"2\" /><test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
     map name (children doc) === ["test","test","b","test","test"]
@@ -52,7 +49,7 @@ main = do
     [c] <- return $ childrenBy doc "test"
     forM_ attrs $ \a -> attributeBy c a === Just (Attribute a a)
     forM_ ["missing","gone","nothing"] $ \a -> attributeBy c a === Nothing
-    putStrLn "Done"
+    putStrLn "\nSuccess"
 
 
 checkFind :: Node -> IO ()
@@ -65,7 +62,7 @@ checkFind n = do
     mapM_ checkFind $ children n
 
 
-a === b = if a == b then putStrLn "success" else fail "mismatch"
+a === b = if a == b then putChar '.' else fail "mismatch"
 
 rerender :: Node -> BS.ByteString
 rerender = inside
