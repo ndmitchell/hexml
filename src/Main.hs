@@ -45,7 +45,14 @@ main = do
 
     Right _ <- return $ parse $ "<test " <> BS.unwords [BS.pack $ "x" ++ show i ++ "='value'" | i <- [1..10000]] <> " />"
     Right _ <- return $ parse $ BS.unlines $ replicate 10000 "<test x='value' />"
-    return ()
+
+    let attrs = ["usd:jpy","test","extra","more","stuff","jpy:usd","xxx","xxxx"]
+    Right doc <- return $ parse $ "<test " <> BS.unwords [x <> "='" <> x <> "'" | x <- attrs] <> ">middle</test>"
+    [c] <- return $ childrenBy doc "test"
+    forM_ attrs $ \a -> attributeBy c a === Just (Attribute a a)
+    forM_ ["missing","gone","nothing"] $ \a -> attributeBy c a === Nothing
+    putStrLn "Done"
+
 
 a === b = if a == b then putStrLn "success" else fail "mismatch"
 
