@@ -299,6 +299,13 @@ void static inline attr_alloc(attr_buffer* b, int ask)
     b->alloc = buf2;
 }
 
+void set_error(document* d, char* msg)
+{
+    if (d->error_message != NULL) return; // keep the first error message
+    d->error_message = malloc(strlen(msg)+1);
+    strcpy(d->error_message, msg);
+}
+
 // you now expect a name, perhaps preceeded by whitespace
 // the name may be empty
 str static inline parse_name(document* d)
@@ -326,7 +333,7 @@ str static inline parse_attrval(document* d)
         int start = doc_position(d);
         if (!find(d, c))
         {
-            d->error_message = _strdup("Couldn't find closing attribute bit");
+            set_error(d, "Couldn't find closing attribute bit");
             return start_length(0, 0);
         }
         skip(d, 1);
@@ -385,7 +392,7 @@ void static inline parse_tag(document* d)
     }
     else if (c != '>')
     {
-        d->error_message = _strdup("Gunk at the end of the tag");
+        set_error(d, "Gunk at the end of the tag");
         return;
     }
     d->nodes.nodes[me].inner.start = doc_position(d);
@@ -408,10 +415,10 @@ void static inline parse_tag(document* d)
                 return;
             }
         }
-        d->error_message = _strdup("Mismatch in closing tags");
+        set_error(d, "Mismatch in closing tags");
         return;
     }
-    d->error_message = _strdup("Weirdness when trying to close tags");
+    set_error(d, "Weirdness when trying to close tags");
 }
 
 // Parser until </, return the index of your node children
@@ -483,7 +490,7 @@ document* document_parse(char* s, int slen)
 
     if (d->cursor < d->end && d->error_message == NULL)
     {
-        d->error_message = _strdup("Trailing junk at the end of the document");
+        set_error(d, "Trailing junk at the end of the document");
     }
     return d;
 }
