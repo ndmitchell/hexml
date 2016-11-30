@@ -28,6 +28,7 @@ main = do
             Left err -> when parses $ fail $ "Unexpected parse failure, " ++ show err
             Right doc -> do
                 unless parses $ fail "Unexpected parse success"
+                checkFind doc
                 let r = render doc
                 print r
                 print $ rerender doc
@@ -52,6 +53,16 @@ main = do
     forM_ attrs $ \a -> attributeBy c a === Just (Attribute a a)
     forM_ ["missing","gone","nothing"] $ \a -> attributeBy c a === Nothing
     putStrLn "Done"
+
+
+checkFind :: Node -> IO ()
+checkFind n = do
+    forM_ (attributes n) $ \a -> attributeBy n (attributeName a) === Just a
+    attributeBy n "xxx" === Nothing
+    let cs = children n
+    forM_ ("xxx":map name cs) $ \c ->
+        map outer (filter ((==) c . name) cs) === map outer (childrenBy n c)
+    mapM_ checkFind $ children n
 
 
 a === b = if a == b then putStrLn "success" else fail "mismatch"
