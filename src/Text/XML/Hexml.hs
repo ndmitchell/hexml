@@ -58,8 +58,8 @@ foreign import ccall node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -
 foreign import ccall node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
 foreign import ccall node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
 
--- | A node in an XML document, created by 'documentParse', then calling functions such
---   as 'children' on that initial node.
+-- | A node in an XML document, created by 'parse', then calling functions such
+--   as 'children' on that initial 'Node'.
 data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 
 -- | An XML attribute, comprising of a name and a value. As an example,
@@ -72,7 +72,7 @@ instance Show Node where
 
 -- | Parse a ByteString as an XML document, returning a 'Left' error message, or a 'Right' document.
 --   Note that the returned node will have a 'name' of @\"\"@, no attributes, and content as per the document.
---   Often the first child will be the @<?xml ... ?>@ element. For documents which comprise a single
+--   Often the first child will be the @\<?xml ... ?\>@ element. For documents which comprise a single
 --   root element, use @'children' n !! 1@.
 parse :: BS.ByteString -> Either BS.ByteString Node
 parse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
@@ -109,19 +109,25 @@ attrPeek src doc a = unsafePerformIO $ withForeignPtr doc $ \_ -> do
     val  <- applyStr src <$> peekElemOff (castPtr a) 1
     return $ Attribute name val
 
--- | Get the name of a node, e.g. @<test />@ produces @\"test\"@.
+-- | Get the name of a node, e.g. @\<test /\>@ produces @\"test\"@.
 name :: Node -> BS.ByteString
 name = nodeBS 0
 
--- | Get the inner text. 
+-- | Get the inner text, from inside the tag, e.g. @\<test /\>@ produces @\"\"@
+--   and @\<test\>hello\</test\>@ produces @\"hello\"@.
+--   The result will have identical layout/spacing to the source document.
 inner :: Node -> BS.ByteString
 inner = nodeBS 1
 
--- | Get the outer text. 
+-- | Get the outer text, including the tag itself, e.g. @\<test /\>@ produces @\"\<test /\>\"@
+--   and @\<test\>hello\</test\>@ produces @\"\<test\>hello\</test\>\"@.
+--   The result will have identical layout/spacing to the source document.
 outer :: Node -> BS.ByteString
 outer = nodeBS 2
 
--- | Get the contents of a node, the strings and child nodes.
+-- | Get the contents of a node, including both the content strings (as 'Left', never blank) and
+--   the direct child nodes (as 'Right').
+--   If you only want the child nodes, use 'children'.
 contents :: Node -> [Either BS.ByteString Node]
 contents n@(Node src _ _) = f (strStart inner) outers
     where
@@ -133,6 +139,7 @@ contents n@(Node src _ _) = f (strStart inner) outers
         inner = nodeStr 1 n
         outers = map (nodeStr 2 &&& id) $ children n
 
+-- | Get the direct child nodes of this node.
 children :: Node -> [Node]
 children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
@@ -140,6 +147,7 @@ children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
         count <- fromIntegral <$> peek count
         return [Node src doc $ plusPtr res $ i*szNode | i <- [0..count-1]]
 
+-- | Get the attributes of this node.
 attributes :: Node -> [Attribute]
 attributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
@@ -147,6 +155,10 @@ attributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
         count <- fromIntegral <$> peek count
         return [attrPeek src doc $ plusPtr res $ i*szAttr | i <- [0..count-1]]
 
+-- | Get the direct children of this node which have a specific name.
+--   A more efficient version of:
+--
+-- > childrenBy p s = filter (\n -> name n == s) $ children p
 childrenBy :: Node -> BS.ByteString -> [Node]
 childrenBy (Node src doc n) str = go nullPtr
     where
@@ -155,6 +167,10 @@ childrenBy (Node src doc n) str = go nullPtr
                 r <- node_childBy d n old bs $ fromIntegral len
                 return $ if r == nullPtr then [] else Node src doc r : go r
 
+-- | Get the first attribute of this node which has a specific name, if there is one.
+--   A more efficient version of:
+--
+-- > attributeBy n s = listToMaybe $ filter (\(Attribute a _) -> a == s $ attributes n
 attributeBy :: Node -> BS.ByteString -> Maybe Attribute
 attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
