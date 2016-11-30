@@ -385,22 +385,22 @@ void static inline parse_tag(document* d)
 {
     node_alloc(&d->nodes, 1);
     d->nodes.used_back++;
-    int me = d->nodes.size - d->nodes.used_back;
+    node* me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back];
 
-    d->nodes.nodes[me].outer.start = doc_position(d);
+    me->outer.start = doc_position(d);
     char c = get(d);
     assert(c == '<');
     if (peek(d) == '?') skip(d, 1);
-    d->nodes.nodes[me].name = parse_name(d);
-    d->nodes.nodes[me].attrs = parse_attributes(d);
+    me->name = parse_name(d);
+    me->attrs = parse_attributes(d);
 
     c = get(d);
     if ((c == '/' || c == '?') && peek(d) == '>')
     {
         skip(d, 1);
-        d->nodes.nodes[me].nodes = start_length(0, 0);
-        d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, doc_position(d)).length;
-        d->nodes.nodes[me].inner = start_length(doc_position(d), 0);
+        me->nodes = start_length(0, 0);
+        me->outer.length = start_end(me->outer.start, doc_position(d)).length;
+        me->inner = start_length(doc_position(d), 0);
         return;
     }
     else if (c != '>')
@@ -408,22 +408,26 @@ void static inline parse_tag(document* d)
         set_error(d, "Gunk at the end of the tag");
         return;
     }
-    d->nodes.nodes[me].inner.start = doc_position(d);
-    d->nodes.nodes[me].nodes = parse_content(d);
-    d->nodes.nodes[me].inner.length = start_end(d->nodes.nodes[me].inner.start, doc_position(d)).length;
+    me->inner.start = doc_position(d);
+    str content = parse_content(d);
+
+    // parse_content may have allocated more nodes, so recompute me
+    me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back];
+    me->nodes = content;
+    me->inner.length = start_end(me->inner.start, doc_position(d)).length;
 
     if (d->error_message != NULL) return;
     if (peek(d) == '<' && peekAt(d, 1) == '/')
     {
         skip(d, 2);
-        if (d->end - d->cursor >= d->nodes.nodes[me].name.length &&
-            memcmp(d->cursor, &d->body[d->nodes.nodes[me].name.start], d->nodes.nodes[me].name.length) == 0)
+        if (d->end - d->cursor >= me->name.length &&
+            memcmp(d->cursor, &d->body[me->name.start], me->name.length) == 0)
         {
-            skip(d, d->nodes.nodes[me].name.length);
+            skip(d, me->name.length);
             trim(d);
             if (get(d) == '>')
             {
-                d->nodes.nodes[me].outer.length = start_end(d->nodes.nodes[me].outer.start, doc_position(d)).length;
+                me->outer.length = start_end(me->outer.start, doc_position(d)).length;
                 return;
             }
         }
