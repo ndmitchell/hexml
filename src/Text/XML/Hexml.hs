@@ -1,11 +1,11 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, BangPatterns #-}
 
 -- | A module for fast first-approximation parsing of XML.
 --   Note that entities, e.g. @&amp;@, are not expanded.
 module Text.XML.Hexml(
     Node, Attribute(..),
     parse, render,
-    name, inner, outer,
+    location, name, inner, outer,
     attributes, children, contents,
     attributeBy, childrenBy
     ) where
@@ -179,3 +179,17 @@ attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
         r <- node_attributeBy d n bs $ fromIntegral len
         return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
+
+-- | Find the starting location of a node, the '<' character.
+--   The first character will be reported as @(line 1,column 1)@, because thats
+--   how error messages typically do it.
+location :: Node -> (Int, Int)
+location n@(Node src _ _) = BS.foldl' f (pair 1 1) $ BS.take (fromIntegral i) src
+    where
+        pair !a !b = (a,b)
+
+        i = strStart $ nodeStr 2 n
+        f (!line, !col) c
+            | c == '\n' = pair (line+1) 1
+            | c == '\t' = pair line (col+8)
+            | otherwise = pair line (col+1)
