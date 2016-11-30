@@ -48,7 +48,6 @@ node* document_node(document* d);
 node* node_children(document* d, node* n, int* res);
 attr* node_attributes(document* d, node* n, int* res);
 
-// Search for given strings within a node
-node* node_firstChildBy(document* d, node* n, char* s, int slen);
-node* node_nextChildBy(document* d, node* parent, node* prev, char* s, int slen);
+// Search for given strings within a node, note that prev may be NULL
+node* node_childBy(document* d, node* parent, node* prev, char* s, int slen);
 attr* node_attributeBy(document* d, node* n, char* s, int slen);

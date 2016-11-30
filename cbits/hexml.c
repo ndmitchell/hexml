@@ -190,28 +190,30 @@ attr* node_attributes(document* d, node* n, int* res)
 
 attr* node_attributeBy(document* d, node* n, char* s, int slen)
 {
-    assert(0);
-    return NULL;
-}
-
-// Search for given strings within a node
-node* node_firstChildBy(document* d, node* n, char* s, int slen)
-{
     if (slen == -1) slen = strlen(s);
-    int i = n->nodes.start;
-    int limit = i + n->nodes.length;
-    for (; i < limit; i++)
+    int i = n->attrs.start;
+    int limit = end(n->attrs);
+    for (i = n->attrs.start; i < limit; i++)
     {
-        if (d->nodes.nodes[i].name.length == slen &&
-            memcmp(s, &d->body[d->nodes.nodes[i].name.start], slen) == 0)
-            return &d->nodes.nodes[i];
+        attr* r = &d->attrs.attrs[i];
+        if (r->name.length == slen && memcmp(s, &d->body[r->name.start], slen) == 0)
+            return r;
     }
     return NULL;
 }
 
-node* node_nextChildBy(document* d, node* parent, node* prev, char* s, int slen)
+// Search for given strings within a node
+node* node_childBy(document* d, node* parent, node* prev, char* s, int slen)
 {
-    assert(0);
+    if (slen == -1) slen = strlen(s);
+    int i = prev == NULL ? parent->nodes.start : prev + 1 - d->nodes.nodes;
+    int limit = end(parent->nodes);
+    for (; i < limit; i++)
+    {
+        node* r = &d->nodes.nodes[i];
+        if (r->name.length == slen && memcmp(s, &d->body[r->name.start], slen) == 0)
+            return r;
+    }
     return NULL;
 }
 

@@ -51,8 +51,7 @@ foreign import ccall document_node :: Ptr CDocument -> IO (Ptr CNode)
 foreign import ccall node_children :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CNode)
 foreign import ccall node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CAttr)
 
-foreign import ccall node_firstChildBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
-foreign import ccall node_nextChildBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
+foreign import ccall node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
 foreign import ccall node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
 
 data Document = Document BS.ByteString (ForeignPtr CDocument)
@@ -140,7 +139,15 @@ nodeAttributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> d
         return [attrPeek src doc $ plusPtr res $ i*szAttr | i <- [0..count-1]]
 
 nodeChildrenBy :: Node -> BS.ByteString -> [Node]
-nodeChildrenBy = node_firstChildBy `seq` node_nextChildBy `seq` undefined
+nodeChildrenBy (Node src doc n) str = go nullPtr
+    where
+        go old = unsafePerformIO $ withForeignPtr doc $ \d ->
+            BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
+                r <- node_childBy d n old bs $ fromIntegral len
+                return $ if r == nullPtr then [] else Node src doc r : go r
 
 nodeAttributeBy :: Node -> BS.ByteString -> Maybe Attribute
-nodeAttributeBy = node_attributeBy `seq` undefined
+nodeAttributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
+    BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
+        r <- node_attributeBy d n bs $ fromIntegral len
+        return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
