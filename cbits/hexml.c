@@ -89,7 +89,7 @@ void static inline bound(char* msg, int index, int mn, int mx)
 {
     if (index < mn || index > mx)
     {
-        printf("Bounds checking failed %s, got %i, which should be in %i:%i\n", msg, index, mn, mx);
+        //printf("Bounds checking failed %s, got %i, which should be in %i:%i\n", msg, index, mn, mx);
         assert(0);
     }
 }
@@ -104,10 +104,8 @@ void static inline bound_str(char* msg, str s, int mn, int mx)
 void render_str(render* r, str s)
 {
     bound_str("render_str", s, 0, doc_length(r->d));
-    render_char(r, '[');
     for (int i = 0; i < s.length; i++)
         render_char(r, r->d->body[s.start + i]);
-    render_char(r, ']');
 }
 
 void render_tag(render* r, node* n);
