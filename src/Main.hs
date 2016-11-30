@@ -33,8 +33,9 @@ main = do
                 let Right d = parse r
                 r === render d
 
-    let Right doc = parse "<test id=\"1\" extra=\"2\" /><test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
+    let Right doc = parse "<test id=\"1\" extra=\"2\" />\n<test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
     map name (children doc) === ["test","test","b","test","test"]
+    location (children doc !! 2) === (2,16)
     length (childrenBy doc "test") === 4
     length (childrenBy doc "b") === 1
     length (childrenBy doc "extra") === 0
