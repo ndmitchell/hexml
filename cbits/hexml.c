@@ -51,11 +51,11 @@ typedef struct
 
 struct document
 {
-    char* body; // pointer to initial argument, not owned by us
+    const char* body; // pointer to initial argument, not owned by us
 
     // things only used while parsing
-    char* cursor; // pointer to where we are in body
-    char* end; // pointer to one past the last char
+    const char* cursor; // pointer to where we are in body
+    const char* end; // pointer to one past the last char
     // if cursor is > end we have gone past the end
 
     char* error_message;
@@ -63,8 +63,8 @@ struct document
     attr_buffer attrs;
 };
 
-static inline int doc_length(document* d) { return (int) (d->end - d->body); }
-static inline int doc_position(document* d) { return (int) (d->cursor - d->body); }
+static inline int doc_length(const document* d) { return (int) (d->end - d->body); }
+static inline int doc_position(const document* d) { return (int) (d->cursor - d->body); }
 
 
 /////////////////////////////////////////////////////////////////////
@@ -72,7 +72,7 @@ static inline int doc_position(document* d) { return (int) (d->cursor - d->body)
 
 typedef struct
 {
-    document* d;
+    const document* d;
     char* buffer;
     int length;
     int cursor;
@@ -85,7 +85,7 @@ static inline void render_char(render* r, char c)
     r->cursor++;
 }
 
-static inline void bound(char* msg, int index, int mn, int mx)
+static inline void bound(const char* msg, int index, int mn, int mx)
 {
     if (index < mn || index > mx)
     {
@@ -94,7 +94,7 @@ static inline void bound(char* msg, int index, int mn, int mx)
     }
 }
 
-static inline void bound_str(char* msg, str s, int mn, int mx)
+static inline void bound_str(const char* msg, str s, int mn, int mx)
 {
     if (s.length < 0) assert(0);
     bound(msg, s.start, mn, mx);
@@ -108,9 +108,9 @@ void render_str(render* r, str s)
         render_char(r, r->d->body[s.start + i]);
 }
 
-void render_tag(render* r, node* n);
+void render_tag(render* r, const node* n);
 
-void render_content(render* r, node* n)
+void render_content(render* r, const node* n)
 {
     bound_str("render_conent inner", n->inner, 0, doc_length(r->d));
     bound_str("render_conent nodes", n->nodes, 0, r->d->nodes.used_front);
@@ -127,7 +127,7 @@ void render_content(render* r, node* n)
     render_str(r, start_end(done, end(n->inner)));
 }
 
-void render_tag(render* r, node* n)
+void render_tag(render* r, const node* n)
 {
     render_char(r, '<');
     render_str(r, n->name);
@@ -149,7 +149,7 @@ void render_tag(render* r, node* n)
     render_char(r, '>');
 }
 
-int node_render(document* d, node* n, char* buffer, int length)
+int node_render(const document* d, const node* n, char* buffer, int length)
 {
     render r;
     r.d = d;
@@ -168,8 +168,8 @@ int node_render(document* d, node* n, char* buffer, int length)
 /////////////////////////////////////////////////////////////////////
 // NOT THE PARSER
 
-char* document_error(document* d){return d->error_message;}
-node* document_node(document* d){return &d->nodes.nodes[0];}
+char* document_error(const document* d){return d->error_message;}
+node* document_node(const document* d){return &d->nodes.nodes[0];}
 
 void document_free(document* d)
 {
@@ -179,20 +179,20 @@ void document_free(document* d)
     free(d);
 }
 
-node* node_children(document* d, node* n, int* res)
+node* node_children(const document* d, const node* n, int* res)
 {
     *res = n->nodes.length;
     return &d->nodes.nodes[n->nodes.start];
 }
 
-attr* node_attributes(document* d, node* n, int* res)
+attr* node_attributes(const document* d, const node* n, int* res)
 {
     *res = n->attrs.length;
     return &d->attrs.attrs[n->attrs.start];
 }
 
 
-attr* node_attributeBy(document* d, node* n, char* s, int slen)
+attr* node_attributeBy(const document* d, const node* n, const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     const int limit = end(n->attrs);
@@ -206,7 +206,7 @@ attr* node_attributeBy(document* d, node* n, char* s, int slen)
 }
 
 // Search for given strings within a node
-node* node_childBy(document* d, node* parent, node* prev, char* s, int slen)
+node* node_childBy(const document* d, const node* parent, const node* prev, const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     int i = prev == NULL ? parent->nodes.start : (int) (prev + 1 - d->nodes.nodes);
@@ -253,13 +253,13 @@ static inline bool is_space(char c) { return is(c, tag_space); }
 /////////////////////////////////////////////////////////////////////
 // PARSER COMBINATORS
 
-static inline char peekAt(document* d, int i) { return d->cursor[i]; }
-static inline void skip(document* d, int i) { d->cursor += i; }
-static inline char peek(document* d) { return peekAt(d, 0); }
-static inline char get(document* d) { char c = peek(d); skip(d, 1); return c; }
+char static inline peekAt(document* d, int i) { return d->cursor[i]; }
+void static inline skip(document* d, int i) { d->cursor += i; }
+char static inline peek(document* d) { return peekAt(d, 0); }
+char static inline get(document* d) { char c = peek(d); skip(d, 1); return c; }
 
 // Remove whitespace characters from the cursor while they are still whitespace
-static inline void trim(document* d)
+void static inline trim(document* d)
 {
     while (is_space(peek(d)))
         skip(d, 1);
@@ -285,7 +285,7 @@ bool find(document* d, char c)
 /////////////////////////////////////////////////////////////////////
 // PARSING CODE
 
-static inline void node_alloc(node_buffer* b, int ask)
+void static inline node_alloc(node_buffer* b, int ask)
 {
     int space = b->size - b->used_back - b->used_front;
     if (space >= ask) return;
@@ -300,7 +300,7 @@ static inline void node_alloc(node_buffer* b, int ask)
     b->alloc = buf2;
 }
 
-static inline void attr_alloc(attr_buffer* b, int ask)
+void static inline attr_alloc(attr_buffer* b, int ask)
 {
     int space = b->size - b->used;
     if (space >= ask) return;
@@ -507,7 +507,7 @@ typedef struct
     node nodes[500];
 } buffer;
 
-document* document_parse(char* s, int slen)
+document* document_parse(const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     assert(s[slen] == 0);
