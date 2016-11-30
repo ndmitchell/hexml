@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 
--- | A module for first-approximation parsing of XML.
+-- | A module for fast first-approximation parsing of XML.
 --   Note that entities, e.g. @&amp;@, are not expanded.
 module Text.XML.Hexml(
     Node, Attribute(..),
@@ -58,15 +58,22 @@ foreign import ccall node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -
 foreign import ccall node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
 foreign import ccall node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
 
--- | An XML document, created by 'documentParse'.
+-- | A node in an XML document, created by 'documentParse', then calling functions such
+--   as 'children' on that initial node.
 data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 
+-- | An XML attribute, comprising of a name and a value. As an example,
+--   @hello=\"world\"@ would produce @Attribute \"hello\" \"world\"@.
 data Attribute = Attribute BS.ByteString BS.ByteString deriving (Show, Eq, Ord)
 
 instance Show Node where
     show d = "Node " ++ show (BS.unpack $ outer d)
 
 
+-- | Parse a ByteString as an XML document, returning a 'Left' error message, or a 'Right' document.
+--   Note that the returned node will have a 'name' of @\"\"@, no attributes, and content as per the document.
+--   Often the first child will be the @<?xml ... ?>@ element. For documents which comprise a single
+--   root element, use @'children' n !! 1@.
 parse :: BS.ByteString -> Either BS.ByteString Node
 parse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
     doc <- document_parse str (fromIntegral len - 1)
@@ -80,6 +87,8 @@ parse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0'
         doc <- newForeignPtr document_free_funptr doc
         return $ Right $ Node src doc node
 
+-- | Given a node, rerender it to something with an equivalent parse tree.
+--   Mostly useful for debugging - if you want the real source document use 'outer' instead.
 render :: Node -> BS.ByteString
 render (Node _ doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     i <- node_render d n nullPtr 0
@@ -100,15 +109,19 @@ attrPeek src doc a = unsafePerformIO $ withForeignPtr doc $ \_ -> do
     val  <- applyStr src <$> peekElemOff (castPtr a) 1
     return $ Attribute name val
 
+-- | Get the name of a node, e.g. @<test />@ produces @\"test\"@.
 name :: Node -> BS.ByteString
 name = nodeBS 0
 
+-- | Get the inner text. 
 inner :: Node -> BS.ByteString
 inner = nodeBS 1
 
+-- | Get the outer text. 
 outer :: Node -> BS.ByteString
 outer = nodeBS 2
 
+-- | Get the contents of a node, the strings and child nodes.
 contents :: Node -> [Either BS.ByteString Node]
 contents n@(Node src _ _) = f (strStart inner) outers
     where
