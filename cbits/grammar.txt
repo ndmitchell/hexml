@@ -1,0 +1,17 @@
+-- Taken from https://www.w3.org/TR/xml11/ and simplified
+
+[1] document ::= content
+[39] element ::= XMLDecl | EmptyElemTag | STag content ETag
+[23] XMLDecl ::= '<?xml' (S Attribute)* S? '?>'
+[10] AttValue ::= '"' [^<"] '"' | "'" [^<'] "'"
+[44] EmptyElemTag ::= '<' Name (S Attribute)* S? '/>'
+[25] Eq ::= S? '=' S?
+[40] STag ::= '<' Name (S Attribute)* S? '>'  [WFC: Unique Att Spec]
+[41] Attribute ::= Name Eq AttValue
+[43] content ::= (element | CDSect | Comment | [^<]+)*
+[42] ETag ::= '</' Name S? '>'
+[18] CDSect ::= CDStart CData CDEnd
+[19] CDStart ::= '<![CDATA['
+[20] CData ::= (Char* - (Char* ']]>' Char*))
+[21] CDEnd ::= ']]>'
+[15] Comment ::= '<!--' ((Char - '-') | ('-' (Char - '-')))* '-->'
