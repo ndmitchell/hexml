@@ -13,6 +13,7 @@ examples :: [(Bool, BS.ByteString)]
 examples =
     [(True, "<test id='bob'>here<extra/>there</test>")
     ,(True, "<test /><close />")
+    ,(True, "<test /><!-- comment > --><close />")
     ,(True, "<test id=\"bob value\" another-attr=\"test with <\">here </test> more text at the end<close />")
     ,(False, "<test></more>")
     ,(False, "<test")
@@ -58,5 +59,5 @@ rerender = inside
                     | otherwise = error "Invalid name"
         validAttr x | BS.notElem '\"' x = x
                     | otherwise = error "Invalid attribute"
-        validStr x | BS.notElem '<' x = x
+        validStr x | BS.notElem '<' x || BS.isInfixOf "<!--" x = x
                    | otherwise = error $ show ("Invalid string", x)

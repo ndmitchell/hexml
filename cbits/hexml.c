@@ -444,10 +444,32 @@ str parse_content(document* d)
         {
             break;
         }
-        if (peekAt(d, 1) == '/')
+        else if (peekAt(d, 1) == '/')
         {
             // have found a </
             break;
+        }
+        else if (peekAt(d, 1) == '!' && peekAt(d, 2) == '-' && peekAt(d, 3) == '-')
+        {
+            skip(d, 3);
+            // you can't reuse the two '-' characters for the closing as well
+            if (peekAt(d, 0) == '\0' || peekAt(d, 1) == '\0')
+            {
+                set_error(d, "Didn't get a closing comment");
+                return start_end(0, 0);
+            }
+            skip(d, 2);
+            while (1)
+            {
+                if (!find(d, '>'))
+                {
+                    set_error(d, "Didn't get a closing comment");
+                    return start_end(0, 0);
+                }
+                skip(d, 1);
+                if (peekAt(d, -3) == '-' && peekAt(d, -2))
+                    break;
+            }
         }
         else
         {
