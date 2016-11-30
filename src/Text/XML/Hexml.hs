@@ -4,10 +4,10 @@
 --   Note that entities, e.g. @&amp;@, are not expanded.
 module Text.XML.Hexml(
     Node, Attribute(..),
-    nodeParse, nodeRender,
-    nodeName, nodeInner, nodeOuter,
-    nodeAttributes, nodeChildren, nodeContents,
-    nodeAttributeBy, nodeChildrenBy
+    parse, render,
+    name, inner, outer,
+    attributes, children, contents,
+    attributeBy, childrenBy
     ) where
 
 import Control.Applicative
@@ -64,11 +64,11 @@ data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 data Attribute = Attribute BS.ByteString BS.ByteString deriving (Show, Eq, Ord)
 
 instance Show Node where
-    show d = "Node " ++ show (BS.unpack $ nodeOuter d)
+    show d = "Node " ++ show (BS.unpack $ outer d)
 
 
-nodeParse :: BS.ByteString -> Either BS.ByteString Node
-nodeParse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
+parse :: BS.ByteString -> Either BS.ByteString Node
+parse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
     doc <- document_parse str (fromIntegral len - 1)
     err <- document_error doc
     if err /= nullPtr then do
@@ -80,8 +80,8 @@ nodeParse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton 
         doc <- newForeignPtr document_free_funptr doc
         return $ Right $ Node src doc node
 
-nodeRender :: Node -> BS.ByteString
-nodeRender (Node _ doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+render :: Node -> BS.ByteString
+render (Node _ doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     i <- node_render d n nullPtr 0
     BS.create (fromIntegral i) $ \ptr -> void $ node_render d n (castPtr ptr) i
 
@@ -100,17 +100,17 @@ attrPeek src doc a = unsafePerformIO $ withForeignPtr doc $ \_ -> do
     val  <- applyStr src <$> peekElemOff (castPtr a) 1
     return $ Attribute name val
 
-nodeName :: Node -> BS.ByteString
-nodeName = nodeBS 0
+name :: Node -> BS.ByteString
+name = nodeBS 0
 
-nodeInner :: Node -> BS.ByteString
-nodeInner = nodeBS 1
+inner :: Node -> BS.ByteString
+inner = nodeBS 1
 
-nodeOuter :: Node -> BS.ByteString
-nodeOuter = nodeBS 2
+outer :: Node -> BS.ByteString
+outer = nodeBS 2
 
-nodeContents :: Node -> [Either BS.ByteString Node]
-nodeContents n@(Node src _ _) = f (strStart inner) outers
+contents :: Node -> [Either BS.ByteString Node]
+contents n@(Node src _ _) = f (strStart inner) outers
     where
         f i [] = string i (strEnd inner) ++ []
         f i ((x, n):xs) = string i (strStart x) ++ Right n : f (strEnd x) xs
@@ -118,32 +118,32 @@ nodeContents n@(Node src _ _) = f (strStart inner) outers
         string start end | start == end = []
                          | otherwise = [Left $ applyStr src $ Str start (end - start)]
         inner = nodeStr 1 n
-        outers = map (nodeStr 2 &&& id) $ nodeChildren n
+        outers = map (nodeStr 2 &&& id) $ children n
 
-nodeChildren :: Node -> [Node]
-nodeChildren (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+children :: Node -> [Node]
+children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
         res <- node_children d n count
         count <- fromIntegral <$> peek count
         return [Node src doc $ plusPtr res $ i*szNode | i <- [0..count-1]]
 
-nodeAttributes :: Node -> [Attribute]
-nodeAttributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+attributes :: Node -> [Attribute]
+attributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
         res <- node_attributes d n count
         count <- fromIntegral <$> peek count
         return [attrPeek src doc $ plusPtr res $ i*szAttr | i <- [0..count-1]]
 
-nodeChildrenBy :: Node -> BS.ByteString -> [Node]
-nodeChildrenBy (Node src doc n) str = go nullPtr
+childrenBy :: Node -> BS.ByteString -> [Node]
+childrenBy (Node src doc n) str = go nullPtr
     where
         go old = unsafePerformIO $ withForeignPtr doc $ \d ->
             BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
                 r <- node_childBy d n old bs $ fromIntegral len
                 return $ if r == nullPtr then [] else Node src doc r : go r
 
-nodeAttributeBy :: Node -> BS.ByteString -> Maybe Attribute
-nodeAttributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
+attributeBy :: Node -> BS.ByteString -> Maybe Attribute
+attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
         r <- node_attributeBy d n bs $ fromIntegral len
         return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r

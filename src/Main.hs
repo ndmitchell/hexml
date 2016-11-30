@@ -2,7 +2,7 @@
 
 module Main(main) where
 
-import Text.XML.Hexml
+import Text.XML.Hexml as X
 import qualified Data.ByteString.Char8 as BS
 import Control.Monad
 import Data.Monoid
@@ -23,35 +23,35 @@ main :: IO ()
 main = do
     forM_ examples $ \(parses, src) -> do
         print src
-        case nodeParse src of
+        case parse src of
             Left err -> when parses $ fail $ "Unexpected parse failure, " ++ show err
             Right doc -> do
                 unless parses $ fail "Unexpected parse success"
-                let r = nodeRender doc
+                let r = render doc
                 print r
                 print $ rerender doc
                 when (r /= rerender doc) $ fail "Different rerender"
-                let Right d = nodeParse r
-                when (r /= nodeRender d) $ fail "Different after rerendering"
+                let Right d = parse r
+                when (r /= render d) $ fail "Different after rerendering"
 
-    let Right doc = nodeParse "<test id=\"1\" extra=\"2\" /><test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
-    map nodeName (nodeChildren doc) === ["test","test","b","test","test"]
-    length (nodeChildrenBy doc "test") === 4
-    length (nodeChildrenBy doc "b") === 1
-    length (nodeChildrenBy doc "extra") === 0
-    nodeAttributes (head $ nodeChildren doc) === [Attribute "id" "1", Attribute "extra" "2"]
-    map (`nodeAttributeBy` "id") (nodeChildrenBy doc "test") === map (fmap (Attribute "id")) [Just "1", Just "2", Just "4", Nothing]
+    let Right doc = parse "<test id=\"1\" extra=\"2\" /><test id=\"2\" /><b><test id=\"3\" /></b><test id=\"4\" /><test />"
+    map name (children doc) === ["test","test","b","test","test"]
+    length (childrenBy doc "test") === 4
+    length (childrenBy doc "b") === 1
+    length (childrenBy doc "extra") === 0
+    attributes (head $ children doc) === [Attribute "id" "1", Attribute "extra" "2"]
+    map (`attributeBy` "id") (childrenBy doc "test") === map (fmap (Attribute "id")) [Just "1", Just "2", Just "4", Nothing]
 
 
 a === b = if a == b then putStrLn "success" else fail "mismatch"
 
 rerender :: Node -> BS.ByteString
-rerender = contents
+rerender = inside
     where
-        contents x = BS.concat $ map (either validStr node) $ nodeContents x
-        node x = "<" <> BS.unwords (validName (nodeName x) : map attr (nodeAttributes x)) <> ">" <>
-                 contents x <>
-                 "</" <> nodeName x <> ">"
+        inside x = BS.concat $ map (either validStr node) $ contents x
+        node x = "<" <> BS.unwords (validName (name x) : map attr (attributes x)) <> ">" <>
+                 inside x <>
+                 "</" <> name x <> ">"
         attr (Attribute a b) = validName a <> "=\"" <> validAttr b <> "\""
 
         validName x | BS.all (\x -> isAlphaNum x || x `elem` ("-:_" :: String)) x = x
