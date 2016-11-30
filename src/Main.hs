@@ -62,7 +62,7 @@ checkFind n = do
     mapM_ checkFind $ children n
 
 
-a === b = if a == b then putChar '.' else fail "mismatch"
+a === b = if a == b then putChar '.' else fail $ "mismatch, " ++ show a ++ " /= " ++ show b
 
 rerender :: Node -> BS.ByteString
 rerender = inside
