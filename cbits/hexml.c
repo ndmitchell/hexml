@@ -156,6 +156,7 @@ int node_render(document* d, node* n, char* buffer, int length)
     r.buffer = buffer;
     r.length = length;
     r.cursor = 0;
+    // The root node (and only the root node) has an empty length, so just render its innards
     if (n->name.length == 0)
         render_content(&r, n);
     else
