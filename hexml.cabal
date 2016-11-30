@@ -38,7 +38,7 @@ library
     include-dirs:     cbits
     includes:         hexml.h
     install-includes: hexml.h
-    cc-options:       -std=c99
+    cc-options:       -std=c99 -O3
 
     exposed-modules:
         Text.XML.Hexml
