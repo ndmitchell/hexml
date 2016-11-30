@@ -64,7 +64,10 @@ data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 
 -- | An XML attribute, comprising of a name and a value. As an example,
 --   @hello=\"world\"@ would produce @Attribute \"hello\" \"world\"@.
-data Attribute = Attribute BS.ByteString BS.ByteString deriving (Show, Eq, Ord)
+data Attribute = Attribute
+    {attributeName :: BS.ByteString
+    ,attributeVaule :: BS.ByteString
+    } deriving (Show, Eq, Ord)
 
 instance Show Node where
     show d = "Node " ++ show (BS.unpack $ outer d)
