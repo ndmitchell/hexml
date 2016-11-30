@@ -95,9 +95,11 @@ parse src = do
 -- | Given a node, rerender it to something with an equivalent parse tree.
 --   Mostly useful for debugging - if you want the real source document use 'outer' instead.
 render :: Node -> BS.ByteString
-render (Node _ doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+render (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     i <- node_render d n nullPtr 0
-    BS.create (fromIntegral i) $ \ptr -> void $ node_render d n (castPtr ptr) i
+    res <- BS.create (fromIntegral i) $ \ptr -> void $ node_render d n (castPtr ptr) i
+    touchForeignPtr $ fst3 $ BS.toForeignPtr src
+    return res
 
 applyStr :: BS.ByteString -> Str -> BS.ByteString
 applyStr bs Str{..} = BS.take (fromIntegral strLength) $ BS.drop (fromIntegral strStart) bs
@@ -170,6 +172,7 @@ childrenBy (Node src doc n) str = go nullPtr
         go old = unsafePerformIO $ withForeignPtr doc $ \d ->
             BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
                 r <- node_childBy d n old bs $ fromIntegral len
+                touchForeignPtr $ fst3 $ BS.toForeignPtr src
                 return $ if r == nullPtr then [] else Node src doc r : go r
 
 -- | Get the first attribute of this node which has a specific name, if there is one.
@@ -180,6 +183,7 @@ attributeBy :: Node -> BS.ByteString -> Maybe Attribute
 attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
         r <- node_attributeBy d n bs $ fromIntegral len
+        touchForeignPtr $ fst3 $ BS.toForeignPtr src
         return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
 
 -- | Find the starting location of a node, the '<' character.
