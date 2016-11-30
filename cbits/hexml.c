@@ -85,9 +85,9 @@ static inline void render_char(render* r, char c)
     r->cursor++;
 }
 
-static inline void bound(int index, int mn, int mx)
+static inline void bound(int idx, int mn, int mx)
 {
-    assert(index >= mn && index <= mx);
+    assert(idx >= mn && idx <= mx);
 }
 
 static inline void bound_str(str s, int mn, int mx)
