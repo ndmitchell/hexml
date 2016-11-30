@@ -312,7 +312,6 @@ void set_error(document* d, char* msg)
 // the name may be empty
 str static inline parse_name(document* d)
 {
-    trim(d);
     int start = doc_position(d);
     if (!is_name1(peek(d)))
         return start_length(start, 0);
@@ -325,8 +324,11 @@ str static inline parse_name(document* d)
 str static inline parse_attrval(document* d)
 {
     trim(d);
-    if (peek(d) != '=') return start_length(0,0);
-    skip(d, 1);
+    if (get(d) != '=')
+    {
+        set_error(d, "Expected = in attribute, but missing");
+        return start_length(0, 0);
+    }
     trim(d);
     char c = peek(d);
     if (c == '\"' || c == '\'')
@@ -342,7 +344,10 @@ str static inline parse_attrval(document* d)
         return start_end(start, doc_position(d) - 1);
     }
     else
-        return parse_name(d);
+    {
+        set_error(d, "Invalid attribute");
+        return start_length(0, 0);
+    }
 }
 
 
@@ -355,6 +360,7 @@ str static inline parse_attributes(document* d)
     res.start = d->attrs.used;
     for (int i = 0; ; i++)
     {
+        trim(d);
         str name = parse_name(d);
         if (name.length == 0) break;
         attr_alloc(&d->attrs, 1);
@@ -405,7 +411,6 @@ void static inline parse_tag(document* d)
     if (peek(d) == '<' && peekAt(d, 1) == '/')
     {
         skip(d, 2);
-        trim(d);
         if (d->end - d->cursor >= d->nodes.nodes[me].name.length &&
             memcmp(d->cursor, &d->body[d->nodes.nodes[me].name.start], d->nodes.nodes[me].name.length) == 0)
         {
