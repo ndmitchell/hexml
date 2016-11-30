@@ -73,6 +73,10 @@ instance Show Node where
     show d = "Node " ++ show (BS.unpack $ outer d)
 
 
+touchBS :: BS.ByteString -> IO ()
+touchBS = touchForeignPtr . fst3 . BS.toForeignPtr
+
+
 -- | Parse a ByteString as an XML document, returning a 'Left' error message, or a 'Right' document.
 --   Note that the returned node will have a 'name' of @\"\"@, no attributes, and content as per the document.
 --   Often the first child will be the @\<?xml ... ?\>@ element. For documents which comprise a single
@@ -98,7 +102,7 @@ render :: Node -> BS.ByteString
 render (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     i <- node_render d n nullPtr 0
     res <- BS.create (fromIntegral i) $ \ptr -> void $ node_render d n (castPtr ptr) i
-    touchForeignPtr $ fst3 $ BS.toForeignPtr src
+    touchBS src
     return res
 
 applyStr :: BS.ByteString -> Str -> BS.ByteString
@@ -172,7 +176,7 @@ childrenBy (Node src doc n) str = go nullPtr
         go old = unsafePerformIO $ withForeignPtr doc $ \d ->
             BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
                 r <- node_childBy d n old bs $ fromIntegral len
-                touchForeignPtr $ fst3 $ BS.toForeignPtr src
+                touchBS src
                 return $ if r == nullPtr then [] else Node src doc r : go r
 
 -- | Get the first attribute of this node which has a specific name, if there is one.
@@ -183,7 +187,7 @@ attributeBy :: Node -> BS.ByteString -> Maybe Attribute
 attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
         r <- node_attributeBy d n bs $ fromIntegral len
-        touchForeignPtr $ fst3 $ BS.toForeignPtr src
+        touchBS src
         return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
 
 -- | Find the starting location of a node, the '<' character.
