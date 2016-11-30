@@ -290,7 +290,14 @@ void static inline node_alloc(node_buffer* b, int ask)
 {
     int space = b->size - b->used_back - b->used_front;
     if (space >= ask) return;
-    assert(0);
+    int size2 = (b->size + 1000 + ask) * 2;
+    node* buf2 = malloc(size2 * sizeof(node));
+    memcpy(buf2, b->nodes, b->used_front * sizeof(node));
+    memcpy(&buf2[size2 - b->used_back], &b->nodes[b->size - b->used_back], b->used_back * sizeof(node));
+    free(b->alloc);
+    b->size = size2;
+    b->nodes = buf2;
+    b->alloc = buf2;
 }
 
 void static inline attr_alloc(attr_buffer* b, int ask)
