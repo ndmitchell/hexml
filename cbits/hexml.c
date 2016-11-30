@@ -63,8 +63,8 @@ struct document
     attr_buffer attrs;
 };
 
-int static inline doc_length(document* d) { return d->end - d->body; }
-int static inline doc_position(document* d) { return d->cursor - d->body; }
+int static inline doc_length(document* d) { return (int) (d->end - d->body); }
+int static inline doc_position(document* d) { return (int) (d->cursor - d->body); }
 
 
 /////////////////////////////////////////////////////////////////////
@@ -194,7 +194,7 @@ attr* node_attributes(document* d, node* n, int* res)
 
 attr* node_attributeBy(document* d, node* n, char* s, int slen)
 {
-    if (slen == -1) slen = strlen(s);
+    if (slen == -1) slen = (int) strlen(s);
     const int limit = end(n->attrs);
     for (int i = n->attrs.start; i < limit; i++)
     {
@@ -208,8 +208,8 @@ attr* node_attributeBy(document* d, node* n, char* s, int slen)
 // Search for given strings within a node
 node* node_childBy(document* d, node* parent, node* prev, char* s, int slen)
 {
-    if (slen == -1) slen = strlen(s);
-    int i = prev == NULL ? parent->nodes.start : prev + 1 - d->nodes.nodes;
+    if (slen == -1) slen = (int) strlen(s);
+    int i = prev == NULL ? parent->nodes.start : (int) (prev + 1 - d->nodes.nodes);
     const int limit = end(parent->nodes);
     for (; i < limit; i++)
     {
@@ -508,7 +508,7 @@ typedef struct
 
 document* document_parse(char* s, int slen)
 {
-    if (slen == -1) slen = strlen(s);
+    if (slen == -1) slen = (int) strlen(s);
     assert(s[slen] == 0);
     init_parse_table();
 

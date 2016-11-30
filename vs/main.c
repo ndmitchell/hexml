@@ -13,7 +13,7 @@ char* readFile(char* file)
     fseek(f, 0, SEEK_SET);
     char* res = malloc(len + 1);
     res[len] = 0;
-    int n = fread(res, 1, len, f);
+    size_t n = fread(res, 1, len, f);
     assert(n == len);
     fclose(f);
     return res;
