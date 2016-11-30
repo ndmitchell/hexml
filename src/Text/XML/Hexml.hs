@@ -2,7 +2,7 @@
 
 module Text.XML.Hexml(
     Document, Node, Attribute(..),
-    parse, render, rootNode,
+    documentParse, documentRender, documentNode,
     nodeName, nodeInner, nodeOuter,
     nodeAttributes, nodeChildren, nodeContents,
     nodeAttributeBy, nodeChildrenBy
@@ -12,11 +12,13 @@ import Control.Monad
 import Data.Int
 import Foreign.C
 import Foreign.Ptr
+import Foreign.Marshal hiding (void)
 import Foreign.ForeignPtr
 import Foreign.Storable
 import System.IO.Unsafe
 import Data.Monoid
-import qualified Data.ByteString as BS
+import Data.Tuple.Extra
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Unsafe as BS
 import qualified Data.ByteString.Internal as BS
 
@@ -24,13 +26,20 @@ data CDocument
 data CNode
 data CAttr
 
-data Str = Str {start :: {-# UNPACK #-} !Int32, length :: {-# UNPACK #-} !Int32}
+szAttr = 2 * sizeOf (undefined :: Str)
+szNode = 5 * sizeOf (undefined :: Str)
+
+
+data Str = Str {strStart :: {-# UNPACK #-} !Int32, strLength :: {-# UNPACK #-} !Int32} deriving Show
+
+strEnd :: Str -> Int32
+strEnd Str{..} = strStart + strLength
 
 instance Storable Str where
     sizeOf _ = 8
     alignment _ = alignment (0 :: Int64)
     peek p = Str <$> peekByteOff p 0 <*> peekByteOff p 4
-    poke p Str{..} = pokeByteOff p 0 start >> pokeByteOff p 4 length
+    poke p Str{..} = pokeByteOff p 0 strStart >> pokeByteOff p 4 strLength
 
 foreign import ccall document_parse :: CString -> CInt -> IO (Ptr CDocument)
 foreign import ccall document_free :: Ptr CDocument -> IO ()
@@ -39,8 +48,8 @@ foreign import ccall document_render :: Ptr CDocument -> CString -> CInt -> IO C
 foreign import ccall document_error :: Ptr CDocument -> IO CString
 foreign import ccall document_node :: Ptr CDocument -> IO (Ptr CNode)
 
-foreign import ccall node_children :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> Ptr CNode
-foreign import ccall node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> Ptr CAttr
+foreign import ccall node_children :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CNode)
+foreign import ccall node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CAttr)
 
 foreign import ccall node_firstChildBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
 foreign import ccall node_nextChildBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
@@ -50,10 +59,17 @@ data Document = Document BS.ByteString (ForeignPtr CDocument)
 
 data Node = Node BS.ByteString (ForeignPtr CDocument) (Ptr CNode)
 
-data Attribute = Attribute BS.ByteString BS.ByteString
+data Attribute = Attribute BS.ByteString BS.ByteString deriving Show
 
-parse :: BS.ByteString -> Either BS.ByteString Document
-parse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton 0) $ \(str, len) -> do
+instance Show Document where
+    show d = "Document " ++ show (BS.unpack $ nodeOuter $ documentNode d)
+
+instance Show Node where
+    show d = "Node " ++ show (BS.unpack $ nodeOuter d)
+
+
+documentParse :: BS.ByteString -> Either BS.ByteString Document
+documentParse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton '\0') $ \(str, len) -> do
     doc <- document_parse str (fromIntegral len - 1)
     err <- document_error doc
     if err /= nullPtr then do
@@ -64,40 +80,66 @@ parse src = unsafePerformIO $ BS.unsafeUseAsCStringLen (src <> BS.singleton 0) $
         doc <- newForeignPtr document_free_funptr doc
         return $ Right $ Document src doc
 
-render :: Document -> BS.ByteString
-render (Document _ doc) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+documentRender :: Document -> BS.ByteString
+documentRender (Document _ doc) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     i <- document_render d nullPtr 0
     BS.create (fromIntegral i) $ \ptr -> void $ document_render d (castPtr ptr) i
 
 
-rootNode :: Document -> Node
-rootNode d@(Document src doc) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+documentNode :: Document -> Node
+documentNode d@(Document src doc) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     Node src doc <$> document_node d
 
 applyStr :: BS.ByteString -> Str -> BS.ByteString
-applyStr bs Str{..} = BS.take (fromIntegral length) $ BS.drop (fromIntegral start) bs
+applyStr bs Str{..} = BS.take (fromIntegral strLength) $ BS.drop (fromIntegral strStart) bs
 
-nodePeek :: Int -> Node -> BS.ByteString
-nodePeek i (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \_ -> do
-    applyStr src <$> peekElemOff (castPtr n) i
+nodeStr :: Int -> Node -> Str
+nodeStr i (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \_ -> peekElemOff (castPtr n) i
+
+nodeBS :: Int -> Node -> BS.ByteString
+nodeBS i node@(Node src doc n) = applyStr src $ nodeStr i node
+
+attrPeek :: BS.ByteString -> ForeignPtr CDocument -> Ptr CAttr -> Attribute
+attrPeek src doc a = unsafePerformIO $ withForeignPtr doc $ \_ -> do
+    name <- applyStr src <$> peekElemOff (castPtr a) 0
+    val  <- applyStr src <$> peekElemOff (castPtr a) 1
+    return $ Attribute name val
 
 nodeName :: Node -> BS.ByteString
-nodeName = nodePeek 0
+nodeName = nodeBS 0
 
 nodeInner :: Node -> BS.ByteString
-nodeInner = nodePeek 1
+nodeInner = nodeBS 1
 
 nodeOuter :: Node -> BS.ByteString
-nodeOuter = nodePeek 2
+nodeOuter = nodeBS 2
 
-nodeContents :: Node -> [Either Node BS.ByteString]
-nodeContents = undefined
+nodeContents :: Node -> [Either BS.ByteString Node]
+nodeContents n@(Node src _ _) = f (strStart inner) outers
+    where
+        f i [] = string i (strEnd inner) ++ []
+        f i ((x, n):xs) = string i (strStart x) ++ Right n : f (strEnd x) xs
+
+        string start end | start == end = []
+                         | otherwise = [Left $ applyStr src $ Str start (end - start)]
+        inner = nodeStr 1 n
+        outers = map (nodeStr 2 &&& id) $ nodeChildren n
 
 nodeChildren :: Node -> [Node]
-nodeChildren = node_children `seq` undefined
+nodeChildren (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+    alloca $ \count -> do
+        res <- node_children d n count
+        count <- fromIntegral <$> peek count
+        let sz = 2 * szNode
+        return [Node src doc $ plusPtr res $ i*sz | i <- [0..count-1]]
 
 nodeAttributes :: Node -> [Attribute]
-nodeAttributes = node_attributes `seq` undefined
+nodeAttributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+    alloca $ \count -> do
+        res <- node_attributes d n count
+        count <- fromIntegral <$> peek count
+        let sz = 2 * szAttr
+        return [attrPeek src doc (plusPtr res $ i*sz) | i <- [0..count-1]]
 
 nodeChildrenBy :: Node -> BS.ByteString -> [Node]
 nodeChildrenBy = node_firstChildBy `seq` node_nextChildBy `seq` undefined
