@@ -22,7 +22,7 @@ char* readFile(char* file)
 
 char* example = "<?xml version=\"1.0\" lang=\"ja\"?><foo><bar baz=\"qux\">quux</bar><bar baz=\"bar\">hoge</bar><piyo>&gt;piyopiyo&lt;</piyo></foo><foo2 />";
 
-void main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     setbuf(stdout, NULL);
     char* body = argv[1] == NULL ? example : readFile(argv[1]);
@@ -36,7 +36,11 @@ void main(int argc, char **argv)
         node_render(doc, document_node(doc), s, len);
         s[len] = 0;
         printf("Parse successful\n"); // , %s\n", s);
+        return 0;
     }
     else
+    {
         printf("Parse failed, %s\n", err);
+        return 1;
+    }
 }
