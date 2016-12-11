@@ -249,9 +249,9 @@ static inline bool is_space(char c) { return is(c, tag_space); }
 /////////////////////////////////////////////////////////////////////
 // PARSER COMBINATORS
 
-static inline char peekAt(document* d, int i) { return d->cursor[i]; }
+static inline char peekAt(const document* d, int i) { return d->cursor[i]; }
+static inline char peek(const document* d) { return peekAt(d, 0); }
 static inline void skip(document* d, int i) { d->cursor += i; }
-static inline char peek(document* d) { return peekAt(d, 0); }
 static inline char get(document* d) { char c = peek(d); skip(d, 1); return c; }
 
 // Remove whitespace characters from the cursor while they are still whitespace
@@ -310,7 +310,7 @@ static inline void attr_alloc(attr_buffer* b, int ask)
     b->alloc = buf2;
 }
 
-void set_error(document* d, char* msg)
+void set_error(document* d, const char* msg)
 {
     if (d->error_message != NULL) return; // keep the first error message
     d->error_message = malloc(strlen(msg)+1);
