@@ -367,7 +367,7 @@ static inline str parse_attrval(document* d)
 static inline str parse_attributes(document* d)
 {
     int start = d->attrs.used;
-    for (;;)
+    while (d->error_message == NULL)
     {
         trim(d);
         str name = parse_name(d);
