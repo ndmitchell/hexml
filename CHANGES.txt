@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+0.2
     #6, remove buffer overruns
     #5, add lower bounds
 0.1
