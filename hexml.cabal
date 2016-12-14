@@ -4,7 +4,7 @@ name:               hexml
 version:            0.2
 license:            BSD3
 license-file:       LICENSE
-category:           Development
+category:           XML
 author:             Neil Mitchell <ndmitchell@gmail.com>
 maintainer:         Neil Mitchell <ndmitchell@gmail.com>
 copyright:          Neil Mitchell 2016
