@@ -367,7 +367,7 @@ static inline str parse_attrval(document* d)
 static inline str parse_attributes(document* d)
 {
     int start = d->attrs.used;
-    for (;;)
+    while (d->error_message == NULL)
     {
         trim(d);
         str name = parse_name(d);
@@ -396,6 +396,7 @@ static inline void parse_tag(document* d)
     if (peek(d) == '?') skip(d, 1);
     me->name = parse_name(d);
     me->attrs = parse_attributes(d);
+    if (d->error_message != NULL) return;
 
     c = get(d);
     if ((c == '/' || c == '?') && peek(d) == '>')
