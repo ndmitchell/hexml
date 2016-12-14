@@ -334,11 +334,12 @@ static inline str parse_name(document* d)
 static inline str parse_attrval(document* d)
 {
     trim(d);
-    if (get(d) != '=')
+    if (peek(d) != '=')
     {
         set_error(d, "Expected = in attribute, but missing");
         return start_length(0, 0);
     }
+    skip(d, 1);
     trim(d);
     char c = peek(d);
     if (c == '\"' || c == '\'')
@@ -403,10 +404,10 @@ static inline void parse_tag(document* d)
     me->attrs = parse_attributes(d);
     if (d->error_message != NULL) return;
 
-    c = get(d);
-    if ((c == '/' || c == '?') && peek(d) == '>')
+    c = peek(d);
+    if ((c == '/' || c == '?') && peekAt(d, 1) == '>')
     {
-        skip(d, 1);
+        skip(d, 2);
         me->nodes = start_length(0, 0);
         me->outer.length = start_end(me->outer.start, doc_position(d)).length;
         me->inner = start_length(doc_position(d), 0);
@@ -417,6 +418,8 @@ static inline void parse_tag(document* d)
         set_error(d, "Gunk at the end of the tag");
         return;
     }
+    else
+        skip(d, 1);
     me->inner.start = doc_position(d);
     str content = parse_content(d);
 
