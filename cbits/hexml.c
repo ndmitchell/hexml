@@ -367,7 +367,7 @@ static inline str parse_attrval(document* d)
 static inline str parse_attributes(document* d)
 {
     int start = d->attrs.used;
-    while (d->error_message == NULL)
+    for (;;)
     {
         trim(d);
         str name = parse_name(d);
@@ -395,6 +395,11 @@ static inline void parse_tag(document* d)
     assert(c == '<');
     if (peek(d) == '?') skip(d, 1);
     me->name = parse_name(d);
+    if (me->name.length == 0)
+    {
+        set_error(d, "Missing tag name");
+        return;
+    }
     me->attrs = parse_attributes(d);
     if (d->error_message != NULL) return;
 
