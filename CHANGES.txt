@@ -1,4 +1,5 @@
 Changelog for Hexml
 
+    #5, add lower bounds
 0.1
     Initial version
