@@ -536,9 +536,7 @@ document* document_parse(const char* s, int slen)
     str content = parse_content(d);
     d->nodes.nodes[0].nodes = content;
 
-    if (d->cursor < d->end && d->error_message == NULL)
-    {
+    if (d->cursor < d->end)
         set_error(d, "Trailing junk at the end of the document");
-    }
     return d;
 }
