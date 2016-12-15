@@ -52,5 +52,5 @@ attr* hexml_node_attributes(const document* d, const node* n, int* res);
 
 // Search for given strings within a node, note that prev may be NULL
 // Requires the string passed to document_parse to be valid.
-node* hexml_node_childBy(const document* d, const node* parent, const node* prev, const char* s, int slen);
-attr* hexml_node_attributeBy(const document* d, const node* n, const char* s, int slen);
+node* hexml_node_child(const document* d, const node* parent, const node* prev, const char* s, int slen);
+attr* hexml_node_attribute(const document* d, const node* n, const char* s, int slen);

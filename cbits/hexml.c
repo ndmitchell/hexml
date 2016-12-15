@@ -188,7 +188,7 @@ attr* hexml_node_attributes(const document* d, const node* n, int* res)
 }
 
 
-attr* hexml_node_attributeBy(const document* d, const node* n, const char* s, int slen)
+attr* hexml_node_attribute(const document* d, const node* n, const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     const int limit = end(n->attrs);
@@ -202,7 +202,7 @@ attr* hexml_node_attributeBy(const document* d, const node* n, const char* s, in
 }
 
 // Search for given strings within a node
-node* hexml_node_childBy(const document* d, const node* parent, const node* prev, const char* s, int slen)
+node* hexml_node_child(const document* d, const node* parent, const node* prev, const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     int i = prev == NULL ? parent->nodes.start : (int) (prev + 1 - d->nodes.nodes);

@@ -55,8 +55,8 @@ foreign import ccall hexml_document_node :: Ptr CDocument -> IO (Ptr CNode)
 foreign import ccall hexml_node_children :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CNode)
 foreign import ccall hexml_node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CAttr)
 
-foreign import ccall hexml_node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
-foreign import ccall hexml_node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
+foreign import ccall hexml_node_child :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
+foreign import ccall hexml_node_attribute :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
 
 -- | A node in an XML document, created by 'parse', then calling functions such
 --   as 'children' on that initial 'Node'.
@@ -175,7 +175,7 @@ childrenBy (Node src doc n) str = go nullPtr
     where
         go old = unsafePerformIO $ withForeignPtr doc $ \d ->
             BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
-                r <- hexml_node_childBy d n old bs $ fromIntegral len
+                r <- hexml_node_child d n old bs $ fromIntegral len
                 touchBS src
                 return $ if r == nullPtr then [] else Node src doc r : go r
 
@@ -186,7 +186,7 @@ childrenBy (Node src doc n) str = go nullPtr
 attributeBy :: Node -> BS.ByteString -> Maybe Attribute
 attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
-        r <- hexml_node_attributeBy d n bs $ fromIntegral len
+        r <- hexml_node_attribute d n bs $ fromIntegral len
         touchBS src
         return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
 
