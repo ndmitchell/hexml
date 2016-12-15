@@ -45,18 +45,18 @@ instance Storable Str where
     peek p = Str <$> peekByteOff p 0 <*> peekByteOff p 4
     poke p Str{..} = pokeByteOff p 0 strStart >> pokeByteOff p 4 strLength
 
-foreign import ccall document_parse :: CString -> CInt -> IO (Ptr CDocument)
-foreign import ccall document_free :: Ptr CDocument -> IO ()
-foreign import ccall "&document_free" document_free_funptr :: FunPtr (Ptr CDocument -> IO ())
-foreign import ccall node_render :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO CInt
-foreign import ccall document_error :: Ptr CDocument -> IO CString
-foreign import ccall document_node :: Ptr CDocument -> IO (Ptr CNode)
+foreign import ccall hexml_document_parse :: CString -> CInt -> IO (Ptr CDocument)
+foreign import ccall hexml_document_free :: Ptr CDocument -> IO ()
+foreign import ccall "&hexml_document_free" hexml_document_free_funptr :: FunPtr (Ptr CDocument -> IO ())
+foreign import ccall hexml_node_render :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO CInt
+foreign import ccall hexml_document_error :: Ptr CDocument -> IO CString
+foreign import ccall hexml_document_node :: Ptr CDocument -> IO (Ptr CNode)
 
-foreign import ccall node_children :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CNode)
-foreign import ccall node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CAttr)
+foreign import ccall hexml_node_children :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CNode)
+foreign import ccall hexml_node_attributes :: Ptr CDocument -> Ptr CNode -> Ptr CInt -> IO (Ptr CAttr)
 
-foreign import ccall node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
-foreign import ccall node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
+foreign import ccall hexml_node_childBy :: Ptr CDocument -> Ptr CNode -> Ptr CNode -> CString -> CInt -> IO (Ptr CNode)
+foreign import ccall hexml_node_attributeBy :: Ptr CDocument -> Ptr CNode -> CString -> CInt -> IO (Ptr CAttr)
 
 -- | A node in an XML document, created by 'parse', then calling functions such
 --   as 'children' on that initial 'Node'.
@@ -85,23 +85,23 @@ parse :: BS.ByteString -> Either BS.ByteString Node
 parse src = do
     let src0 = src <> BS.singleton '\0'
     unsafePerformIO $ BS.unsafeUseAsCStringLen src0 $ \(str, len) -> do
-        doc <- document_parse str (fromIntegral len - 1)
-        err <- document_error doc
+        doc <- hexml_document_parse str (fromIntegral len - 1)
+        err <- hexml_document_error doc
         if err /= nullPtr then do
-            bs <- BS.packCString =<< document_error doc
-            document_free doc
+            bs <- BS.packCString =<< hexml_document_error doc
+            hexml_document_free doc
             return $ Left bs
          else do
-            node <- document_node doc
-            doc <- newForeignPtr document_free_funptr doc
+            node <- hexml_document_node doc
+            doc <- newForeignPtr hexml_document_free_funptr doc
             return $ Right $ Node src0 doc node
 
 -- | Given a node, rerender it to something with an equivalent parse tree.
 --   Mostly useful for debugging - if you want the real source document use 'outer' instead.
 render :: Node -> BS.ByteString
 render (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
-    i <- node_render d n nullPtr 0
-    res <- BS.create (fromIntegral i) $ \ptr -> void $ node_render d n (castPtr ptr) i
+    i <- hexml_node_render d n nullPtr 0
+    res <- BS.create (fromIntegral i) $ \ptr -> void $ hexml_node_render d n (castPtr ptr) i
     touchBS src
     return res
 
@@ -154,7 +154,7 @@ contents n@(Node src _ _) = f (strStart inner) outers
 children :: Node -> [Node]
 children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
-        res <- node_children d n count
+        res <- hexml_node_children d n count
         count <- fromIntegral <$> peek count
         return [Node src doc $ plusPtr res $ i*szNode | i <- [0..count-1]]
 
@@ -162,7 +162,7 @@ children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
 attributes :: Node -> [Attribute]
 attributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     alloca $ \count -> do
-        res <- node_attributes d n count
+        res <- hexml_node_attributes d n count
         count <- fromIntegral <$> peek count
         return [attrPeek src doc $ plusPtr res $ i*szAttr | i <- [0..count-1]]
 
@@ -175,7 +175,7 @@ childrenBy (Node src doc n) str = go nullPtr
     where
         go old = unsafePerformIO $ withForeignPtr doc $ \d ->
             BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
-                r <- node_childBy d n old bs $ fromIntegral len
+                r <- hexml_node_childBy d n old bs $ fromIntegral len
                 touchBS src
                 return $ if r == nullPtr then [] else Node src doc r : go r
 
@@ -186,7 +186,7 @@ childrenBy (Node src doc n) str = go nullPtr
 attributeBy :: Node -> BS.ByteString -> Maybe Attribute
 attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
-        r <- node_attributeBy d n bs $ fromIntegral len
+        r <- hexml_node_attributeBy d n bs $ fromIntegral len
         touchBS src
         return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
 

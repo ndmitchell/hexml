@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+    #7, prefix all the C functions with hexml_
 0.2
     #6, remove buffer overruns
     #5, add lower bounds

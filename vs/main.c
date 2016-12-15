@@ -26,14 +26,14 @@ int main(int argc, char **argv)
 {
     setbuf(stdout, NULL);
     char* body = argv[1] == NULL ? example : readFile(argv[1]);
-    document* doc = document_parse(body, -1);
-    char* err = document_error(doc);
+    document* doc = hexml_document_parse(body, -1);
+    char* err = hexml_document_error(doc);
     if (err == NULL)
     {
-        int len = node_render(doc, document_node(doc), NULL, 0);
+        int len = hexml_node_render(doc, hexml_document_node(doc), NULL, 0);
         char* s = malloc(len + 1);
         assert(s);
-        node_render(doc, document_node(doc), s, len);
+        hexml_node_render(doc, hexml_document_node(doc), s, len);
         s[len] = 0;
         printf("Parse successful\n"); // , %s\n", s);
         return 0;

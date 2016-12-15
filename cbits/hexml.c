@@ -97,16 +97,16 @@ static inline void bound_str(str s, int mn, int mx)
     bound(end(s), mn, mx);
 }
 
-void render_str(render* r, str s)
+static void render_str(render* r, str s)
 {
     bound_str(s, 0, doc_length(r->d));
     for (int i = 0; i < s.length; i++)
         render_char(r, r->d->body[s.start + i]);
 }
 
-void render_tag(render* r, const node* n);
+static void render_tag(render* r, const node* n);
 
-void render_content(render* r, const node* n)
+static void render_content(render* r, const node* n)
 {
     bound_str(n->inner, 0, doc_length(r->d));
     bound_str(n->nodes, 0, r->d->nodes.used_front);
@@ -123,7 +123,7 @@ void render_content(render* r, const node* n)
     render_str(r, start_end(done, end(n->inner)));
 }
 
-void render_tag(render* r, const node* n)
+static void render_tag(render* r, const node* n)
 {
     render_char(r, '<');
     render_str(r, n->name);
@@ -145,7 +145,7 @@ void render_tag(render* r, const node* n)
     render_char(r, '>');
 }
 
-int node_render(const document* d, const node* n, char* buffer, int length)
+int hexml_node_render(const document* d, const node* n, char* buffer, int length)
 {
     render r;
     r.d = d;
@@ -164,10 +164,10 @@ int node_render(const document* d, const node* n, char* buffer, int length)
 /////////////////////////////////////////////////////////////////////
 // NOT THE PARSER
 
-char* document_error(const document* d){return d->error_message;}
-node* document_node(const document* d){return &d->nodes.nodes[0];}
+char* hexml_document_error(const document* d){return d->error_message;}
+node* hexml_document_node(const document* d){return &d->nodes.nodes[0];}
 
-void document_free(document* d)
+void hexml_document_free(document* d)
 {
     free(d->error_message);
     free(d->nodes.alloc);
@@ -175,20 +175,20 @@ void document_free(document* d)
     free(d);
 }
 
-node* node_children(const document* d, const node* n, int* res)
+node* hexml_node_children(const document* d, const node* n, int* res)
 {
     *res = n->nodes.length;
     return &d->nodes.nodes[n->nodes.start];
 }
 
-attr* node_attributes(const document* d, const node* n, int* res)
+attr* hexml_node_attributes(const document* d, const node* n, int* res)
 {
     *res = n->attrs.length;
     return &d->attrs.attrs[n->attrs.start];
 }
 
 
-attr* node_attributeBy(const document* d, const node* n, const char* s, int slen)
+attr* hexml_node_attributeBy(const document* d, const node* n, const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     const int limit = end(n->attrs);
@@ -202,7 +202,7 @@ attr* node_attributeBy(const document* d, const node* n, const char* s, int slen
 }
 
 // Search for given strings within a node
-node* node_childBy(const document* d, const node* parent, const node* prev, const char* s, int slen)
+node* hexml_node_childBy(const document* d, const node* parent, const node* prev, const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     int i = prev == NULL ? parent->nodes.start : (int) (prev + 1 - d->nodes.nodes);
@@ -220,13 +220,13 @@ node* node_childBy(const document* d, const node* parent, const node* prev, cons
 /////////////////////////////////////////////////////////////////////
 // PARSE TABLE
 
-const char tag_name1 = 0x1;
-const char tag_name = 0x2;
-const char tag_space = 0x4;
+static const char tag_name1 = 0x1;
+static const char tag_name = 0x2;
+static const char tag_space = 0x4;
 
-char parse_table[256];
+static char parse_table[256];
 
-void init_parse_table()
+static void init_parse_table()
 {
     static bool done = 0;
     if (done) return;
@@ -262,7 +262,7 @@ static inline void trim(document* d)
 }
 
 // Find this character form the cursor onwards, if true adjust the cursor to that char, otherwise leave it at the end
-bool find(document* d, char c)
+static bool find(document* d, char c)
 {
     char* x = memchr(d->cursor, c, d->end - d->cursor);
     if (x == NULL)
@@ -310,7 +310,7 @@ static inline void attr_alloc(attr_buffer* b, int ask)
     b->alloc = buf2;
 }
 
-void set_error(document* d, const char* msg)
+static void set_error(document* d, const char* msg)
 {
     if (d->error_message != NULL) return; // keep the first error message
     d->error_message = malloc(strlen(msg)+1);
@@ -381,7 +381,7 @@ static inline str parse_attributes(document* d)
     return start_end(start, d->attrs.used);
 }
 
-str parse_content(document* d);
+static str parse_content(document* d);
 
 
 // Add a new entry into tag, am at a '<'
@@ -451,7 +451,7 @@ static inline void parse_tag(document* d)
 
 // Parser until </, return the index of your node children
 // Not inline as it is recursive
-str parse_content(document* d)
+static str parse_content(document* d)
 {
     int before = d->nodes.used_back;
     while (d->error_message == NULL)
@@ -512,7 +512,7 @@ typedef struct
     node nodes[500];
 } buffer;
 
-document* document_parse(const char* s, int slen)
+document* hexml_document_parse(const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     assert(s[slen] == 0);
