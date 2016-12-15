@@ -249,8 +249,8 @@ static inline bool is_space(char c) { return is(c, tag_space); }
 /////////////////////////////////////////////////////////////////////
 // PARSER COMBINATORS
 
-static inline char peekAt(const document* d, int i) { return d->cursor[i]; }
-static inline char peek(const document* d) { return peekAt(d, 0); }
+static inline char peek_at(const document* d, int i) { return d->cursor[i]; }
+static inline char peek(const document* d) { return peek_at(d, 0); }
 static inline void skip(document* d, int i) { d->cursor += i; }
 static inline char get(document* d) { char c = peek(d); skip(d, 1); return c; }
 
@@ -405,7 +405,7 @@ static inline void parse_tag(document* d)
     if (d->error_message != NULL) return;
 
     c = peek(d);
-    if ((c == '/' || c == '?') && peekAt(d, 1) == '>')
+    if ((c == '/' || c == '?') && peek_at(d, 1) == '>')
     {
         skip(d, 2);
         me->nodes = start_length(0, 0);
@@ -429,7 +429,7 @@ static inline void parse_tag(document* d)
     me->inner.length = start_end(me->inner.start, doc_position(d)).length;
 
     if (d->error_message != NULL) return;
-    if (peek(d) == '<' && peekAt(d, 1) == '/')
+    if (peek(d) == '<' && peek_at(d, 1) == '/')
     {
         skip(d, 2);
         if (d->end - d->cursor >= me->name.length &&
@@ -461,16 +461,16 @@ static str parse_content(document* d)
         {
             break;
         }
-        else if (peekAt(d, 1) == '/')
+        else if (peek_at(d, 1) == '/')
         {
             // have found a </
             break;
         }
-        else if (peekAt(d, 1) == '!' && peekAt(d, 2) == '-' && peekAt(d, 3) == '-')
+        else if (peek_at(d, 1) == '!' && peek_at(d, 2) == '-' && peek_at(d, 3) == '-')
         {
             skip(d, 3);
             // you can't reuse the two '-' characters for the closing as well
-            if (peekAt(d, 0) == '\0' || peekAt(d, 1) == '\0')
+            if (peek_at(d, 0) == '\0' || peek_at(d, 1) == '\0')
             {
                 set_error(d, "Didn't get a closing comment");
                 return start_end(0, 0);
@@ -484,7 +484,7 @@ static str parse_content(document* d)
                     return start_end(0, 0);
                 }
                 skip(d, 1);
-                if (peekAt(d, -3) == '-' && peekAt(d, -2))
+                if (peek_at(d, -3) == '-' && peek_at(d, -2))
                     break;
             }
         }
