@@ -484,7 +484,7 @@ static str parse_content(document* d)
                     return start_end(0, 0);
                 }
                 skip(d, 1);
-                if (peek_at(d, -3) == '-' && peek_at(d, -2))
+                if (peek_at(d, -3) == '-' && peek_at(d, -2) == '-')
                     break;
             }
         }

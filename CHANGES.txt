@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+    Fix a bug when parsing closing comments
     #7, prefix all the C functions with hexml_
 0.2
     #6, remove buffer overruns
