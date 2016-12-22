@@ -1,6 +1,6 @@
 # Script based on code from https://github.com/ndmitchell/hexml/issues/6
 # More examples of things to do are at that ticket
-set -eu
+set -e
 
 # First install AFL
 if ! command -v afl-clang-fast > /dev/null ; then
@@ -21,8 +21,13 @@ AFL_HARDEN=1 afl-clang-fast -O2 -Icbits cbits/fuzz.c -o $PWD/hexml-fuzz
 if ! grep -q core /proc/sys/kernel/core_pattern ; then
     echo core | sudo tee /proc/sys/kernel/core_pattern
 fi
-AFL_EXIT_WHEN_DONE=1 AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@
-cat afl-results/fuzzer_stats
+if [ -z "$CI" ] ; then
+    AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@
+else
+    AFL_EXIT_WHEN_DONE=1 AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so timeout 5m afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@ > /dev/null || true
+    cat afl-results/fuzzer_stats
+    grep "unique_crashes *: 0" afl-results/fuzzer_stats # fail if there are failures
+fi
 
 # Minimize failures
 # $ AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-cmin -i results/crashes/ -o results.shrunk -- $PWD/a.out @@
