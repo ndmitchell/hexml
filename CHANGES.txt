@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+    #8, Mac compatibility
     Fix a bug when parsing closing comments
     #7, prefix all the C functions with hexml_
 0.2
