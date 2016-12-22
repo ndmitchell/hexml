@@ -21,7 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\cbits\hexml.c" />
     <ClInclude Include="..\cbits\hexml.h" />
-    <ClCompile Include="main.c" />
+    <ClCompile Include="..\cbits\main.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{9DA5F6EE-A35E-4ED6-ABC2-A7707392E6EB}</ProjectGuid>
