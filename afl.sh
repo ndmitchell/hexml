@@ -1,15 +1,18 @@
 # Script based on code from https://github.com/ndmitchell/hexml/issues/6
 # More examples of things to do are at that ticket
+set -eu
 
 # First install AFL
-# $ wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
-# $ tar xf afl-latest.tgz
-# $ cd afl-*
-# $ make
-# $ cd llvm_mode && make && cd ../
-# $ sudo make install
-# $ cd libdislocator
-# $ make && sudo make install
+if ! command -v afl-clang-fast > /dev/null ; then
+    wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
+    tar xf afl-latest.tgz
+    cd afl-*
+    make
+    cd llvm_mode && make && cd ..
+    sudo make install
+    cd libdislocator && make && sudo make install && cd ..
+    cd ..
+fi
 
 # Compile it
 AFL_HARDEN=1 afl-clang-fast -O2 -Icbits cbits/fuzz.c -o $PWD/hexml-fuzz
