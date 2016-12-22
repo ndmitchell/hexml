@@ -19,9 +19,10 @@ AFL_HARDEN=1 afl-clang-fast -O2 -Icbits cbits/fuzz.c -o $PWD/hexml-fuzz
 
 # Fuzz it
 if ! grep -q core /proc/sys/kernel/core_pattern ; then
-    sudo echo core > /proc/sys/kernel/core_pattern
+    echo core | sudo tee /proc/sys/kernel/core_pattern
 fi
-AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@
+AFL_EXIT_WHEN_DONE=1 AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@
+cat afl-results/fuzzer_stats
 
 # Minimize failures
 # $ AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-cmin -i results/crashes/ -o results.shrunk -- $PWD/a.out @@
