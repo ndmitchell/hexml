@@ -8,3 +8,4 @@
 /.stack-work/
 /issues/
 /vs/x64/
+/afl-results/

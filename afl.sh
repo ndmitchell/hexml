@@ -15,7 +15,7 @@
 AFL_HARDEN=1 afl-clang-fast -O2 -Icbits cbits/fuzz.c -o $PWD/hexml-fuzz
 
 # Fuzz it
-AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/results -- $PWD/hexml-fuzz @@
+AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@
 
 # Minimize failures
 # $ AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-cmin -i results/crashes/ -o results.shrunk -- $PWD/a.out @@
