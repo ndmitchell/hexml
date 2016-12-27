@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+    #9, don't walk off the end of the character table
 0.3
     #8, Mac compatibility
     Fix a bug when parsing closing comments

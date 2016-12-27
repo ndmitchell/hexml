@@ -240,7 +240,7 @@ static void init_parse_table()
     done = 1;
 }
 
-static inline bool is(char c, char tag) { return parse_table[c] & tag; }
+static inline bool is(char c, char tag) { return parse_table[(unsigned char) c] & tag; }
 static inline bool is_name1(char c) { return is(c, tag_name1); }
 static inline bool is_name(char c) { return is(c, tag_name); }
 static inline bool is_space(char c) { return is(c, tag_space); }
