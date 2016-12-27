@@ -15,16 +15,16 @@ if ! command -v afl-clang-fast > /dev/null ; then
 fi
 
 # Compile it
-AFL_HARDEN=1 afl-clang-fast -O2 -Icbits cbits/fuzz.c -o $PWD/hexml-fuzz
+AFL_USE_ASAN=1 afl-clang-fast -O2 -Icbits cbits/fuzz.c -o $PWD/hexml-fuzz
 
 # Fuzz it
 if ! grep -q core /proc/sys/kernel/core_pattern ; then
     echo core | sudo tee /proc/sys/kernel/core_pattern
 fi
 if [ -z "$CI" ] ; then
-    AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@
+    afl-fuzz -T hexml -m none -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@
 else
-    AFL_EXIT_WHEN_DONE=1 AFL_PRELOAD=/usr/local/lib/afl/libdislocator.so timeout 5m afl-fuzz -T hexml -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@ > /dev/null || true
+    AFL_EXIT_WHEN_DONE=1 timeout 5m afl-fuzz -T hexml -m none -x /usr/local/share/afl/dictionaries/xml.dict -i $PWD/xml -o $PWD/afl-results -- $PWD/hexml-fuzz @@ > /dev/null || true
     cat afl-results/fuzzer_stats
     grep "unique_crashes *: 0" afl-results/fuzzer_stats # fail if there are failures
 fi
