@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+0.3.1
     #9, don't walk off the end of the character table
 0.3
     #8, Mac compatibility
