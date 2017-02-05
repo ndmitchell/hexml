@@ -7,7 +7,7 @@ license-file:       LICENSE
 category:           XML
 author:             Neil Mitchell <ndmitchell@gmail.com>
 maintainer:         Neil Mitchell <ndmitchell@gmail.com>
-copyright:          Neil Mitchell 2016
+copyright:          Neil Mitchell 2017
 synopsis:           XML subset DOM parser
 description:
     An XML DOM-style parser, that only parses a subset of XML, but is designed to be fast.
