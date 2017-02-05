@@ -13,7 +13,7 @@ description:
     An XML DOM-style parser, that only parses a subset of XML, but is designed to be fast.
 homepage:           https://github.com/ndmitchell/hexml#readme
 bug-reports:        https://github.com/ndmitchell/hexml/issues
-tested-with:        GHC==8.0.1, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3
+tested-with:        GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3
 extra-doc-files:
     README.md
     CHANGES.txt
