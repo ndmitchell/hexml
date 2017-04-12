@@ -22,7 +22,7 @@ examples =
 
 main :: IO ()
 main = do
-    forM_ examples $ \(parses, src) -> do
+    forM_ examples $ \(parses, src) ->
         case parse src of
             Left err -> when parses $ fail $ "Unexpected parse failure, " ++ show err
             Right doc -> do
