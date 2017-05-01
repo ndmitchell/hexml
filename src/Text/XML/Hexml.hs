@@ -152,7 +152,7 @@ contents n@(Node src _ _) = f (strStart inner) outers
 
 -- | Get the direct child nodes of this node.
 children :: Node -> [Node]
-children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d ->
     alloca $ \count -> do
         res <- hexml_node_children d n count
         count <- fromIntegral <$> peek count
@@ -160,7 +160,7 @@ children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
 
 -- | Get the attributes of this node.
 attributes :: Node -> [Attribute]
-attributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
+attributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d ->
     alloca $ \count -> do
         res <- hexml_node_attributes d n count
         count <- fromIntegral <$> peek count
