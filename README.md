@@ -11,3 +11,5 @@ The name "hexml" is a combination of "Hex" (a curse) and "XML". The "X" should n
 Hexml may be suitable if you want to quickly parse XML, from known sources, and a full XML parser has been shown to be a bottleneck. As an alternative to hexml, which supports things like entities but is still pretty fast, see [Pugixml](http://pugixml.org/) (with a [Haskell binding](https://hackage.haskell.org/package/pugixml)).
 
 Hexml is tested with [AFL](http://lcamtuf.coredump.cx/afl/).
+
+If you want lenses for Hexml, see [hexml-lens](http://hackage.haskell.org/package/hexml-lens).
