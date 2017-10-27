@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+    #13, allow the . character in tags and attributes
 0.3.2
     #10, mark the small fast FFI calls as "unsafe" (up to 10x faster)
 0.3.1

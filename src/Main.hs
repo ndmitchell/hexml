@@ -74,7 +74,7 @@ rerender = inside
                  "</" <> name x <> ">"
         attr (Attribute a b) = validName a <> "=\"" <> validAttr b <> "\""
 
-        validName x | BS.all (\x -> isAlphaNum x || x `elem` ("-:_" :: String)) x = x
+        validName x | BS.all (\x -> isAlphaNum x || x `elem` ("-.:_" :: String)) x = x
                     | otherwise = error "Invalid name"
         validAttr x | BS.notElem '\"' x = x
                     | otherwise = error "Invalid attribute"

@@ -233,7 +233,7 @@ static void init_parse_table()
     for (int i = 0; i < 256; i++)
     {
         bool name1 = i == ':' || i == '_' || (i >= 'a' && i <= 'z') || (i >= 'A' && i <= 'Z');
-        bool name = name1 || i == '-' || (i >= '0' && i <= '9');
+        bool name = name1 || i == '-' || i == '.' || (i >= '0' && i <= '9');
         bool space = i == ' ' || i == '\t' || i == '\r' || i == '\n';
         parse_table[i] = (name1 ? tag_name1 : 0) | (name ? tag_name : 0) | (space ? tag_space : 0);
     }
