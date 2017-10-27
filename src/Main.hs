@@ -18,6 +18,7 @@ examples =
     ,(False, "<test></more>")
     ,(False, "<test")
     ,(True, "<?xml version=\"1.1\"?>\n<greeting>Hello, world!</greeting>")
+    ,(True, "<foo bar.baz=\"qux\"></foo>")
     ]
 
 main :: IO ()
