@@ -12,8 +12,9 @@ data Out
     | TagComment | TagOpen | TagClose | TagOpenClose
       deriving Show
 
-isName1 x = x == ':' || x == '_' || (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z')
-isName x = isName1 x || x == '-' || (x >= '0' && x <= '9')
+is lower upper x = x >= lower && x <= upper
+isName1 x = x == ':' || x == '_' || is 'a' 'z' x || is 'A' 'Z' x
+isName x = isName1 x || x == '-' || is '0' '9' x
 isSpace x = x == ' ' || x == '\t' || x == '\r' || x == '\n'
 
 whitespace = many $ match isSpace
@@ -52,8 +53,7 @@ tag = do
     let name_ = name `choice` abort "Missing tag name"
     choices
         [do lit "!--"
-            many $ do
-                lit "-->" -- FIXME: Not correct!!!
+            many $ lit "-->" -- FIXME: Not correct!!!
             out TagComment
         ,do lit "?"
             name_

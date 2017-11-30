@@ -100,7 +100,7 @@ instance Show CharSet where
 -- | Given we know the first argument are all true, can the second argument ever be False
 implies :: [CharSet] -> CharSet -> Bool
 implies known x = all (fromCharSet x) poss
-    where poss = filter (\c -> all (\k -> fromCharSet k c) known) chars
+    where poss = filter (\c -> all (`fromCharSet` c) known) chars
 
 charSetC :: [CharSet] -> ([String], CharSet -> String)
 charSetC sets =
