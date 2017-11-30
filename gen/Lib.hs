@@ -9,10 +9,8 @@ module Lib(
 
 import Control.Monad.Extra
 import Control.Monad.Trans.Writer
-import Data.Char
 import Data.Maybe
 import Data.List
-import Data.Data
 import Data.Bits
 import Data.Monoid
 import Numeric

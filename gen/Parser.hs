@@ -2,7 +2,6 @@
 module Parser(Out(..), html) where
 
 import Lib
-import Control.Monad.Extra
 
 data Out
     = NameStart | NameEnd
