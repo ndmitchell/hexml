@@ -2,6 +2,10 @@
 # More examples of things to do are at that ticket
 set -e
 
+echo DISABLED DUE TO SEGFAULT IN CLANG WHEN COMPILING AFL
+echo See https://github.com/ndmitchell/hexml/issues/14
+exit 0
+
 # First install AFL
 if ! command -v afl-clang-fast > /dev/null ; then
     wget http://lcamtuf.coredump.cx/afl/releases/afl-latest.tgz
