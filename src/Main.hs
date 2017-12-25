@@ -7,6 +7,7 @@ import qualified Data.ByteString.Char8 as BS
 import Control.Monad
 import Data.Monoid
 import Data.Char
+import Prelude
 
 
 examples :: [(Bool, BS.ByteString)]
