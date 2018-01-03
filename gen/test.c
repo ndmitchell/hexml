@@ -3,10 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <ctype.h>
 #include <stdio.h>
-
-typedef int bool;
 
 /////////////////////////////////////////////////////////////////////
 // TYPES
@@ -53,19 +50,12 @@ typedef struct
 struct document
 {
     const char* body; // pointer to initial argument, not owned by us
-
-    // things only used while parsing
-    const char* cursor; // pointer to where we are in body
-    const char* end; // pointer to one past the last char
-    // if cursor is > end we have gone past the end
+    int body_len; // length of the body
 
     char* error_message;
     node_buffer nodes;
     attr_buffer attrs;
 };
-
-static inline int doc_length(const document* d) { return (int) (d->end - d->body); }
-static inline int doc_position(const document* d) { return (int) (d->cursor - d->body); }
 
 
 /////////////////////////////////////////////////////////////////////
@@ -100,7 +90,7 @@ static inline void bound_str(str s, int mn, int mx)
 
 static void render_str(render* r, str s)
 {
-    bound_str(s, 0, doc_length(r->d));
+    bound_str(s, 0, r->d->body_len);
     for (int i = 0; i < s.length; i++)
         render_char(r, r->d->body[s.start + i]);
 }
@@ -109,7 +99,7 @@ static void render_tag(render* r, const node* n);
 
 static void render_content(render* r, const node* n)
 {
-    bound_str(n->inner, 0, doc_length(r->d));
+    bound_str(n->inner, 0, r->d->body_len);
     bound_str(n->nodes, 0, r->d->nodes.used_front);
     bound_str(n->attrs, 0, r->d->attrs.used);
 
@@ -308,8 +298,7 @@ document* hexml_document_parse(const char* s, int slen)
     assert(buf);
     document* d = &buf->document;
     d->body = s;
-    d->cursor = s;
-    d->end = &s[slen];
+    d->body_len = slen;
     d->error_message = NULL;
     d->attrs.size = 1000;
     d->attrs.used = 0;
