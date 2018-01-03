@@ -23,7 +23,7 @@ main = do
         putStrLn $ rerender src res
     writeFileChanged "test.h" $ unlines $ compile html
     buildRule ["test.h","test.c"] ["gen" <.> (if isWindows then "exe" else "")] $
-        system_ "gcc test.c -o gen"
+        system_ "gcc test.c -o gen -Werror"
     system_ "gen"
 
 writeFileChanged :: FilePath -> String -> IO ()
