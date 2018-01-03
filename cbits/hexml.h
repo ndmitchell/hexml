@@ -21,6 +21,7 @@ typedef struct
     str name; // tag name, e.g. <[foo]>
     str inner; // inner text, <foo>[bar]</foo>
     str outer; // outer text, [<foo>bar</foo>]
+    // Not usable, but required to get the correct sizing when returning arrays of nodes
     str attrs; // all the attributes, in the attribute buffer (not usable)
     str nodes; // all the nodes, in the node buffer (not usable)
 } node;
