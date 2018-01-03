@@ -63,10 +63,11 @@ struct document
 
 typedef struct
 {
-    const document* d;
-    char* buffer;
-    int length;
-    int cursor;
+    const document* d; // Document, used to get at the body
+    char* buffer; // Buffer we are writing too
+    int length; // Length of buffer, do not write past the end.
+                // No character is reserved for a NULL terminator.
+    int cursor; // Cursor of where we are writing now
 } render;
 
 static inline void render_char(render* r, char c)
@@ -177,7 +178,6 @@ attr* hexml_node_attributes(const document* d, const node* n, int* res)
     *res = n->attrs.length;
     return &d->attrs.attrs[n->attrs.start];
 }
-
 
 attr* hexml_node_attribute(const document* d, const node* n, const char* s, int slen)
 {
