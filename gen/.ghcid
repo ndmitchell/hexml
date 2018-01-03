@@ -1,0 +1,1 @@
+-c ghci --test=:test --reload=test.c

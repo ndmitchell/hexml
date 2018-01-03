@@ -1,0 +1,3 @@
+:set -fwarn-unused-binds -fwarn-unused-imports -fwarn-orphans
+:load Main
+:def test \xs -> return $ ":main" ++ xs
