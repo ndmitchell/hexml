@@ -335,7 +335,7 @@ document* hexml_document_parse(const char* s, int slen)
 
 int main()
 {
-  const document* d = hexml_document_parse("<test foo='123 xyz'/>", -1);
+  const document* d = hexml_document_parse("<test foo='123 xyz'><inner /> value</test>", -1);
   char buf[1000];
   int len = hexml_node_render(d, hexml_document_node(d), buf, sizeof(buf));
   buf[len] = 0;

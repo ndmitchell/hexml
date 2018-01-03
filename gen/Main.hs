@@ -41,8 +41,9 @@ buildRule from to act = do
         act
 
 examples :: [(Bool, String)]
-examples =
-    [(True, "<test />")
+examples = take 1
+    [(True, "<test foo='123 xyz'><inner /> value</test>")
+    ,(True, "<test />")
     ,(True, "<test id='bob'>here<extra/>there</test>")
     ,(True, "<test /><close />")
     ,(True, "<test /><!-- comment > --><close />")
