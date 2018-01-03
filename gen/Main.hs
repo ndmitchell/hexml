@@ -3,12 +3,17 @@ module Main(main) where
 
 import Lib
 import Parser
-import Control.Monad
+import Control.Monad.Extra
+import System.Process.Extra
+import System.Directory
+import Data.Maybe
+import System.IO.Extra
+import System.FilePath
+import System.Info.Extra
 
 
 main :: IO ()
 main = do
-    writeFile "test.h" $ unlines $ compile html
     forM_ examples $ \(b, src) -> do
         putStrLn ""
         putStrLn src
@@ -16,7 +21,24 @@ main = do
         print res
         print (trail, err)
         putStrLn $ rerender src res
+    writeFileChanged "test.h" $ unlines $ compile html
+    buildRule ["test.h","test.c"] ["gen" <.> (if isWindows then "exe" else "")] $
+        system_ "gcc test.c -o gen"
+    system_ "gen"
 
+writeFileChanged :: FilePath -> String -> IO ()
+writeFileChanged file new = do
+    old <- ifM (doesFileExist file) (readFile' file) (return "")
+    when (old /= new) $
+        writeFile file new
+
+buildRule :: [FilePath] -> [FilePath] -> IO () -> IO ()
+buildRule from to act = do
+    let modTime x = ifM (doesFileExist x) (Just <$> getModificationTime x) (return Nothing)
+    from <- mapM modTime from
+    to <- mapM modTime to
+    when (any isNothing (from ++ to) || maximum from >= minimum to)
+        act
 
 examples :: [(Bool, String)]
 examples =
