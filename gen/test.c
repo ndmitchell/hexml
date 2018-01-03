@@ -262,8 +262,6 @@ static inline str gap(const char* ref, const char* start, const char* end)
     d->attrs.attrs[d->attrs.used].name = gap(d->body, name_start, name_end); \
     d->attrs.attrs[d->attrs.used].value = gap(d->body, quote_start, quote_end); \
     d->attrs.used++;
-#define P_AttribsStart printf("AttribsStart %s\n", p)
-#define P_AttribsEnd printf("AttribsEnd %s\n", p)
 #define P_Tag tag_start = p
 #define P_TagComment printf("TagComment %s\n", p)
 #define P_TagOpen printf("TagOpen %s\n", p)

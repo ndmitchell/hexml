@@ -6,7 +6,6 @@ import Lib
 data Out
     = NameStart | NameEnd
     | QuoteStart | QuoteEnd
-    | AttribsStart | AttribsEnd
     | Tag
     | TagComment | TagOpen | TagClose | TagOpenClose
       deriving Show
@@ -42,9 +41,7 @@ attrib = do
         ,abort "Invalid attribute, expected quote (either ' or \")"]
 
 attribs = do
-    out AttribsStart
     many attrib
-    out AttribsEnd
 
 tag = do
     out Tag

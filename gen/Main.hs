@@ -65,6 +65,4 @@ rerender o = f
         f ((s,NameStart):(e,NameEnd):(_,TagClose):xs) = "/" ++ sub s e ++ ">" ++ f xs
         f ((s,NameStart):(e,NameEnd):xs) = sub s e ++ " " ++ f xs
         f ((s,QuoteStart):(e,QuoteEnd):xs) = "=\"" ++ sub s e ++ "\" " ++ f xs
-        f ((_,AttribsStart):xs) = f xs
-        f ((_,AttribsEnd):xs) = f xs
         f [] = []
