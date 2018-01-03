@@ -171,11 +171,7 @@ runC = f 0
 prettyC :: Show o => [C o] -> [String]
 prettyC xs =
     prefix ++
-    ["static const char* parser(const char* p ARGUMENTS){"
-    ,"  VARIABLES;"] ++
-    fi xs ++
-    ["  return NULL;"
-    ,"}"]
+    concatMap f xs
     where
         (prefix, cond) = charSetC $ concatMap charSets xs
         charSets (While c x) = c : concatMap charSets x
@@ -183,9 +179,9 @@ prettyC xs =
         charSets _ = []
 
         fi = map ("  "++) . concatMap f
-        f (Abort x) = ["abort(" ++ show x ++ ");"]
+        f (Abort x) = ["P_Abort(" ++ show x ++ ");"]
         f Next = ["p++;"]
-        f (Stmt x) = [show x ++ ";"]
+        f (Stmt x) = ["P_" ++ show x ++ ";"]
         f (If c true []) = ["if (" ++ cond c ++ "){"] ++ fi true ++ ["}"]
         f (If c true [false@If{}]) = ["if (" ++ cond c ++ "){"] ++ fi true ++ ["} else " ++ f1] ++ fs
             where f1:fs = f false
