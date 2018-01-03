@@ -102,8 +102,8 @@ implies known x = all (fromCharSet x) poss
 
 charSetC :: [CharSet] -> ([String], CharSet -> String)
 charSetC sets =
-    (["const char parse_table[256] = {" ++ intercalate "," ("0":map disp chars) ++ "};"]
-    ,\x -> fromMaybe ("parse_table[*p] & " ++ showBit (bit $ fromJust $ elemIndex x hard)) $ simple x)
+    (["static const char internal_parse_table[256] = {" ++ intercalate "," ("0":map disp chars) ++ "};"]
+    ,\x -> fromMaybe ("internal_parse_table[*p] & " ++ showBit (bit $ fromJust $ elemIndex x hard)) $ simple x)
     where
         showBit x = "0x" ++ showHex (x :: Int) ""
         disp c = showBit $ foldr (.|.) 0 [bit i | (i, h) <- zip [0..] hard, fromCharSet h c]
@@ -171,7 +171,8 @@ runC = f 0
 prettyC :: Show o => [C o] -> [String]
 prettyC xs =
     prefix ++
-    ["const char* parser(const char* p ARGUMENTS){"] ++
+    ["static const char* parser(const char* p ARGUMENTS){"
+    ,"  VARIABLES;"] ++
     fi xs ++
     ["  return NULL;"
     ,"}"]
