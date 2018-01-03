@@ -324,14 +324,18 @@ document* hexml_document_parse(const char* s, int slen)
     return d;
 }
 
+/////////////////////////////////////////////////////////////////////
+// TEST HARNESS (temporary)
+
 int main()
 {
-  const document* d = hexml_document_parse("<test foo='123 xyz'><inner /> value</test>", -1);
-  char buf[1000];
-  int len = hexml_node_render(d, hexml_document_node(d), buf, sizeof(buf));
-  buf[len] = 0;
-  printf("Result = %s\n", buf);
-  return 0;
+    const document* d = hexml_document_parse("<test foo='123 xyz'><inner /> value</test>", -1);
+    char buf[1000];
+    int len = hexml_node_render(d, hexml_document_node(d), buf, sizeof(buf));
+    buf[len] = 0;
+    printf("Result = %s\n", buf);
+    printf("Used nodes = %i, attribtes = %i\n", d->nodes.used_front, d->attrs.used);
+    return 0;
 }
 
 /*
