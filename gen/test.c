@@ -270,9 +270,12 @@ static inline str gap(const char* ref, const char* start, const char* end)
     d->nodes.nodes[d->nodes.used_front].outer = gap(d->body, tag_start, p); \
     printf("TagOpenClose %s\n", p)
 
+// Given the parsed string, return either NULL (success) or an error message (failure)
 static const char* parser(const char* p, document* d)
 {
-    const char *tag_start, *name_start, *name_end, *quote_start, *quote_end;
+    const char *tag_start; // Where the entire tag starts [<foo
+    const char *name_start, *name_end; // Where a name is <[foo] or <foo [bar]=
+    const char *quote_start, *quote_end; // Where an attribute quote is <foo bar='[123]'>
 #   include "test.h"
     return NULL;
 }
