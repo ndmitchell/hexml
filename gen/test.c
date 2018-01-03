@@ -333,13 +333,14 @@ document* hexml_document_parse(const char* s, int slen)
     return d;
 }
 
-void main()
+int main()
 {
   const document* d = hexml_document_parse("<test foo='123 xyz'/>", -1);
   char buf[1000];
   int len = hexml_node_render(d, hexml_document_node(d), buf, sizeof(buf));
   buf[len] = 0;
   printf("Result = %s\n", buf);
+  return 0;
 }
 
 /*
