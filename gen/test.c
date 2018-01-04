@@ -339,6 +339,9 @@ static inline str gap(const char* ref, const char* start, const char* end)
     str nodes = node_commit(&d->nodes); \
     me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back]; \
     me->nodes = nodes; \
+    if (me->name.length != gap(d->body, name_start, name_end).length || \
+        memcmp(&d->body[me->name.start], name_start, me->name.length) != 0) \
+        return "Mismatch in closing tag"; \
     me->inner = gap(d->body, &d->body[me->inner.start], tag_start); \
     me->outer = gap(d->body, &d->body[me->outer.start], p);
 #define P_TagOpenClose \
