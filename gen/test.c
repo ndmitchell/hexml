@@ -337,6 +337,8 @@ static inline str gap(const char* ref, const char* start, const char* end)
     me->outer = gap(d->body, tag_start, tag_start);
 #define P_TagClose \
     str nodes = node_commit(&d->nodes); \
+    if (d->nodes.used_back == 0) \
+        return "Closing tag with no openning"; \
     me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back]; \
     me->nodes = nodes; \
     if (me->name.length != gap(d->body, name_start, name_end).length || \
