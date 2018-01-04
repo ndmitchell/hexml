@@ -316,9 +316,7 @@ static inline str gap(const char* ref, const char* start, const char* end)
 }
 
 #define P_Abort(x) return x
-#define P_Tag \
-    printf("START: Tag %s\n", p); \
-    tag_start = p;
+#define P_Tag tag_start = p;
 #define P_NameStart name_start = p
 #define P_NameEnd name_end = p
 #define P_AttribsStart \
