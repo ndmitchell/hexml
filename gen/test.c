@@ -93,10 +93,8 @@ static inline void bound_str(str s, int mn, int mx)
 static void render_str(render* r, str s)
 {
     bound_str(s, 0, r->d->body_len);
-    render_char(r, '[');
     for (int i = 0; i < s.length; i++)
         render_char(r, r->d->body[s.start + i]);
-    render_char(r, ']');
 }
 
 static void render_tag(render* r, const node* n);
