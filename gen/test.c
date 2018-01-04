@@ -228,7 +228,9 @@ static inline void node_alloc(node_buffer* b, int ask)
 
 static inline attr* attr_alloc(attr_buffer* b)
 {
-    if (b->size <= b->used)
+    // Ensure there is at least one node left
+    int space = b->size - b->used;
+    if (space < 1)
     {
         int size2 = (b->size + 1000) * 2;
         attr* buf2 = malloc(size2 * sizeof(attr));
