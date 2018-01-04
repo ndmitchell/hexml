@@ -13,7 +13,7 @@ data Out
 
 is lower upper x = x >= lower && x <= upper
 isName1 x = x == ':' || x == '_' || is 'a' 'z' x || is 'A' 'Z' x
-isName x = isName1 x || x == '-' || is '0' '9' x
+isName x = isName1 x || x == '-' || x == '.' || is '0' '9' x
 isSpace x = x == ' ' || x == '\t' || x == '\r' || x == '\n'
 
 whitespace = many $ match isSpace
