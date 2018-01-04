@@ -409,6 +409,8 @@ document* hexml_document_parse(const char* s, int slen)
 /////////////////////////////////////////////////////////////////////
 // TEST HARNESS (temporary)
 
+#ifdef TEST
+
 static char* resolve(const document* d, str loc)
 {
     char* buf = malloc(loc.length + 3);
@@ -455,6 +457,8 @@ int main()
     hexml_document_free(d);
     return 0;
 }
+
+#endif
 
 /*
 void main()
