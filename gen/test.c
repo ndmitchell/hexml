@@ -41,7 +41,8 @@ typedef struct
     // nodes
     int size;
     int used_front; // front entries, stored for good
-    int used_back; // back entries, stack based, copied into front
+    int used_back; // back entries, stack based, copied into front on </close>
+        // back entries which haven't yet been closed have nodes.length == -1
     node* nodes; // dynamically allocated buffer
     node* alloc; // what to call free on
 } node_buffer;
