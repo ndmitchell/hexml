@@ -229,7 +229,7 @@ static inline node* node_alloc(node_buffer* b)
         b->alloc = buf2;
     }
     b->used_back++;
-    return &b->nodes[b->size - b->used_back - 1];
+    return &b->nodes[b->size - b->used_back];
 }
 
 // buffer[from .. from+n] = reverse (buffer[from .. from+n])
@@ -321,41 +321,42 @@ static inline str gap(const char* ref, const char* start, const char* end)
 #define P_Abort(x) return x
 #define P_Tag \
     printf("START: Tag %s\n", p); \
-    me = node_alloc(&d->nodes); \
-    me->outer = gap(d->body, p, p);
+    tag_start = p;
 #define P_NameStart name_start = p
 #define P_NameEnd name_end = p
 #define P_AttribsStart \
+    me = node_alloc(&d->nodes); \
     me->attrs.start = d->attrs.used; \
     me->name = gap(d->body, name_start, name_end);
 #define P_AttribsEnd \
     me->attrs = start_end(me->attrs.start, d->attrs.used);
 #define P_QuoteStart quote_start = p
 #define P_QuoteEnd \
-    quote_end = p; \
     attr* attr = attr_alloc(&d->attrs); \
     attr->name = gap(d->body, name_start, name_end); \
-    attr->value = gap(d->body, quote_start, quote_end);
+    attr->value = gap(d->body, quote_start, p);
 #define P_TagComment printf("MISSING: TagComment %s\n", p)
 #define P_TagOpen \
     me->nodes.length = -1; \
-    me->inner = gap(d->body, p, p);
+    me->inner = gap(d->body, p, p); \
+    me->outer = gap(d->body, tag_start, tag_start);
 #define P_TagClose \
     str str = node_commit(&d->nodes); \
     me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back]; \
     me->nodes = str; \
-    me->inner.length = gap(d->body, p, p).length; \
-    me->outer.length = gap(d->body, p, p).length;
+    me->inner = gap(d->body, &d->body[me->inner.start], tag_start); \
+    me->outer = gap(d->body, &d->body[me->outer.start], p);
 #define P_TagOpenClose \
     me->nodes = start_end(0, 0); \
     me->inner = gap(d->body, p, p); \
-    me->outer.length = gap(d->body, p, p).length;
+    me->outer = gap(d->body, tag_start, p);
 
 // Given the parsed string, return either NULL (success) or an error message (failure)
 static const char* parser(const char* p, document* d)
 {
+    const char *tag_start; // Where the tag starts [<foo
     const char *name_start, *name_end; // Where a name is <[foo] or <foo [bar]=
-    const char *quote_start, *quote_end; // Where an attribute quote is <foo bar='[123]'>
+    const char *quote_start; // Where an attribute quote is <foo bar='[123'>
     node* me; // The current node I'm working on
 #   include "test.h"
     return NULL;
