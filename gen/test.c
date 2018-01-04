@@ -234,7 +234,6 @@ static inline node* node_alloc(node_buffer* b)
 // The ranges completely overlap
 static inline void reverse(node* buffer, int from, int n)
 {
-    int to = from + n - 1;
     for (int to = from + n - 1; to > from; from++, to--)
     {
         node temp = buffer[to];
