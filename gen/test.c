@@ -39,6 +39,7 @@ typedef struct
     // when you commit, you copy over from end to front
 
     // nodes
+    // Invariant: Always at least one free spot (to do copying from front to back)
     int size;
     int used_front; // front entries, stored for good
     int used_back; // back entries, stack based, copied into front on </close>
