@@ -336,9 +336,9 @@ static inline str gap(const char* ref, const char* start, const char* end)
     me->inner = gap(d->body, p, p); \
     me->outer = gap(d->body, tag_start, tag_start);
 #define P_TagClose \
-    str str = node_commit(&d->nodes); \
+    str nodes = node_commit(&d->nodes); \
     me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back]; \
-    me->nodes = str; \
+    me->nodes = nodes; \
     me->inner = gap(d->body, &d->body[me->inner.start], tag_start); \
     me->outer = gap(d->body, &d->body[me->outer.start], p);
 #define P_TagOpenClose \
