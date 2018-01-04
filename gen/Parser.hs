@@ -22,8 +22,8 @@ name = do
     out NameStart
     match isName1
     many $ match isName
-    whitespace
     out NameEnd
+    whitespace
 
 attrib = do
     name
