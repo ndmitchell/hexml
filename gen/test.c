@@ -277,7 +277,7 @@ static inline str node_commit(node_buffer* b)
     }
 
     int n = open - (b->size - b->used_back);
-    memmove_reverse(b->nodes, b->size - b->used_back - n + 1, b->used_front, n);
+    memmove_reverse(b->nodes, b->size - b->used_back, b->used_front, n);
     b->used_back -= n;
     b->used_front += n;
     return start_length(b->used_front - n, n);
