@@ -226,18 +226,21 @@ static inline void node_alloc(node_buffer* b, int ask)
     b->alloc = buf2;
 }
 
-static inline void attr_alloc(attr_buffer* b, int ask)
+static inline attr* attr_alloc(attr_buffer* b)
 {
-    int space = b->size - b->used;
-    if (space >= ask) return;
-    int size2 = (b->size + 1000 + ask) * 2;
-    attr* buf2 = malloc(size2 * sizeof(attr));
-    assert(buf2);
-    memcpy(buf2, b->attrs, b->used * sizeof(attr));
-    free(b->alloc);
-    b->size = size2;
-    b->attrs = buf2;
-    b->alloc = buf2;
+    if (b->size <= b->used)
+    {
+        int size2 = (b->size + 1000) * 2;
+        attr* buf2 = malloc(size2 * sizeof(attr));
+        assert(buf2);
+        memcpy(buf2, b->attrs, b->used * sizeof(attr));
+        free(b->alloc);
+        b->size = size2;
+        b->attrs = buf2;
+        b->alloc = buf2;
+    }
+    b->used++;
+    return &b->attrs[b->used - 1];
 }
 
 static void set_error(document* d, const char* msg)
@@ -269,10 +272,9 @@ static inline str gap(const char* ref, const char* start, const char* end)
 #define P_QuoteStart quote_start = p
 #define P_QuoteEnd \
     quote_end = p; \
-    attr_alloc(&d->attrs, 1); \
-    d->attrs.attrs[d->attrs.used].name = gap(d->body, name_start, name_end); \
-    d->attrs.attrs[d->attrs.used].value = gap(d->body, quote_start, quote_end); \
-    d->attrs.used++;
+    attr = attr_alloc(&d->attrs); \
+    attr->name = gap(d->body, name_start, name_end); \
+    attr->value = gap(d->body, quote_start, quote_end);
 #define P_TagComment printf("TagComment %s\n", p)
 #define P_TagOpen printf("TagOpen %s\n", p)
 #define P_TagClose printf("TagClose %s\n", p)
@@ -285,6 +287,7 @@ static const char* parser(const char* p, document* d)
 {
     const char *name_start, *name_end; // Where a name is <[foo] or <foo [bar]=
     const char *quote_start, *quote_end; // Where an attribute quote is <foo bar='[123]'>
+    attr* attr; // The current attribute I'm working on
     node* me; // The current node I'm working on
 #   include "test.h"
     return NULL;
