@@ -52,7 +52,9 @@ tag = do
     let name_ = name `choice` abort "Missing tag name"
     choices
         [do lit "!--"
-            many $ lit "-->" -- FIXME: Not correct!!!
+            many $ match (/= '-')
+            -- FIXME: Not correct!!!
+            lit "-->"
             out TagComment
         ,do lit "?"
             name_

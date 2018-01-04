@@ -330,7 +330,8 @@ static inline str gap(const char* ref, const char* start, const char* end)
     attr* attr = attr_alloc(&d->attrs); \
     attr->name = gap(d->body, name_start, name_end); \
     attr->value = gap(d->body, quote_start, p);
-#define P_TagComment printf("MISSING: TagComment %s\n", p)
+#define P_TagComment \
+    // No action required - comments just flow as normal text
 #define P_TagOpen \
     me->nodes.length = -1; \
     me->inner = gap(d->body, p, p); \
