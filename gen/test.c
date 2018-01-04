@@ -413,6 +413,26 @@ document* hexml_document_parse(const char* s, int slen)
 /////////////////////////////////////////////////////////////////////
 // TEST HARNESS (temporary)
 
+static char* resolve(const document* d, str loc)
+{
+    char* buf = malloc(loc.length + 3);
+    memcpy(&buf[1], &d->body[loc.start], loc.length);
+    buf[0] = '\"';
+    buf[loc.length+1] = '\"';
+    buf[loc.length+2] = 0;
+    return buf;
+}
+
+static char* disp(str loc)
+{
+    char* buf = malloc(100);
+    if (loc.length == 0)
+        strcpy(buf, "[]");
+    else
+        sprintf(buf, "[%i..%i]", loc.start, end(loc)-1);
+    return buf;
+}
+
 int main()
 {
     setbuf(stdout, NULL);
@@ -427,6 +447,14 @@ int main()
         buf[len] = 0;
         printf("Result = %s\n", buf);
         printf("Used nodes = %i, attributes = %i\n", d->nodes.used_front, d->attrs.used);
+
+        for (int i = 0; i < d->attrs.used; i++)
+            printf("Attr %i: %s=%s\n", i, resolve(d, d->attrs.attrs[i].name), resolve(d, d->attrs.attrs[i].value));
+        for (int i = 0; i < d->nodes.used_front; i++)
+        {
+            printf("Node %i: %s attrs=%s, nodes=%s\n", i, resolve(d, d->nodes.nodes[i].name), disp(d->nodes.nodes[i].attrs), disp(d->nodes.nodes[i].nodes));
+            printf("  inner %s\n  outer %s\n", resolve(d, d->nodes.nodes[i].inner), resolve(d, d->nodes.nodes[i].outer));
+        }
     }
     hexml_document_free(d);
     return 0;
