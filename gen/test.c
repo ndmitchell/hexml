@@ -211,19 +211,29 @@ node* hexml_node_child(const document* d, const node* parent, const node* prev, 
 /////////////////////////////////////////////////////////////////////
 // PARSING CODE
 
-static inline void node_alloc(node_buffer* b, int ask)
+static inline node* node_alloc(node_buffer* b)
 {
+    // Invariant: node_commit requires at least one spare spot
     int space = b->size - b->used_back - b->used_front;
-    if (space >= ask) return;
-    int size2 = (b->size + 1000 + ask) * 2;
-    node* buf2 = malloc(size2 * sizeof(node));
-    assert(buf2);
-    memcpy(buf2, b->nodes, b->used_front * sizeof(node));
-    memcpy(&buf2[size2 - b->used_back], &b->nodes[b->size - b->used_back], b->used_back * sizeof(node));
-    free(b->alloc);
-    b->size = size2;
-    b->nodes = buf2;
-    b->alloc = buf2;
+    if (space < 2)
+    {
+        int size2 = (b->size + 1000) * 2;
+        node* buf2 = malloc(size2 * sizeof(node));
+        assert(buf2);
+        memcpy(buf2, b->nodes, b->used_front * sizeof(node));
+        memcpy(&buf2[size2 - b->used_back], &b->nodes[b->size - b->used_back], b->used_back * sizeof(node));
+        free(b->alloc);
+        b->size = size2;
+        b->nodes = buf2;
+        b->alloc = buf2;
+    }
+    b->used_back++;
+    return &b->nodes[b->size - b->used_back - 1];
+}
+
+static inline void node_commit(node_buffer* b)
+{
+
 }
 
 static inline attr* attr_alloc(attr_buffer* b)
@@ -260,17 +270,15 @@ static inline str gap(const char* ref, const char* start, const char* end)
 
 #define P_Abort(x) return x
 #define P_Tag \
-    node_alloc(&d->nodes, 1); \
-    d->nodes.used_back++; \
-    me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back]; \
-    me->outer = gap(d->body, p, p);
+    node = node_alloc(&d->nodes); \
+    node->outer = gap(d->body, p, p);
 #define P_NameStart name_start = p
 #define P_NameEnd name_end = p
 #define P_AttribsStart \
-    me->attrs.start = d->attrs.used; \
-    me->name = gap(d->body, name_start, name_end);
+    node->attrs.start = d->attrs.used; \
+    node->name = gap(d->body, name_start, name_end);
 #define P_AttribsEnd \
-    me->attrs = start_end(me->attrs.start, d->attrs.used);
+    node->attrs = start_end(node->attrs.start, d->attrs.used);
 #define P_QuoteStart quote_start = p
 #define P_QuoteEnd \
     quote_end = p; \
@@ -281,8 +289,8 @@ static inline str gap(const char* ref, const char* start, const char* end)
 #define P_TagOpen printf("TagOpen %s\n", p)
 #define P_TagClose printf("TagClose %s\n", p)
 #define P_TagOpenClose \
-    me->nodes = start_end(0, 0); \
-    me->outer.length = gap(d->body, p, p).length;
+    node->nodes = start_end(0, 0); \
+    node->outer.length = gap(d->body, p, p).length;
 
 // Given the parsed string, return either NULL (success) or an error message (failure)
 static const char* parser(const char* p, document* d)
@@ -290,7 +298,7 @@ static const char* parser(const char* p, document* d)
     const char *name_start, *name_end; // Where a name is <[foo] or <foo [bar]=
     const char *quote_start, *quote_end; // Where an attribute quote is <foo bar='[123]'>
     attr* attr; // The current attribute I'm working on
-    node* me; // The current node I'm working on
+    node* node; // The current node I'm working on
 #   include "test.h"
     return NULL;
 }
