@@ -396,7 +396,7 @@ document* hexml_document_parse(const char* s, int slen)
     // because there is no guaranteed ordering between LHS and RHS evaluation
     const char* res = parser(s, d);
     if (res != NULL)
-        d->error_message = strdup(res);
+        set_error(d, res);
     else
     {
         d->nodes.nodes[0].nodes = node_commit(&d->nodes);
