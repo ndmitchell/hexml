@@ -254,8 +254,17 @@ static inline str gap(const char* ref, const char* start, const char* end)
 }
 
 #define P_Abort(x) return x
+#define P_Tag \
+    node_alloc(&d->nodes, 1); \
+    me = &d->nodes.nodes[d->nodes.size - d->nodes.used_back]; \
+    me->outer = gap(d->body, p, p);
 #define P_NameStart name_start = p
 #define P_NameEnd name_end = p
+#define P_AttribsStart \
+    me->attrs.start = d->attrs.used; \
+    me->name = gap(d->body, name_start, name_end);
+#define P_AttribsEnd \
+    me->attrs = start_end(me->attrs.start, d->attrs.used);
 #define P_QuoteStart quote_start = p
 #define P_QuoteEnd \
     quote_end = p; \
@@ -263,20 +272,21 @@ static inline str gap(const char* ref, const char* start, const char* end)
     d->attrs.attrs[d->attrs.used].name = gap(d->body, name_start, name_end); \
     d->attrs.attrs[d->attrs.used].value = gap(d->body, quote_start, quote_end); \
     d->attrs.used++;
-#define P_Tag tag_start = p
 #define P_TagComment printf("TagComment %s\n", p)
 #define P_TagOpen printf("TagOpen %s\n", p)
 #define P_TagClose printf("TagClose %s\n", p)
 #define P_TagOpenClose \
-    d->nodes.nodes[d->nodes.used_front].outer = gap(d->body, tag_start, p); \
-    printf("TagOpenClose %s\n", p)
+    me->nodes = start_end(0, 0); \
+     printf("TagOpenClose %s\n", p)
+//    d->nodes.nodes[d->nodes.used_front].outer = gap(d->body, tag_start, p); \
+
 
 // Given the parsed string, return either NULL (success) or an error message (failure)
 static const char* parser(const char* p, document* d)
 {
-    const char *tag_start; // Where the entire tag starts [<foo
     const char *name_start, *name_end; // Where a name is <[foo] or <foo [bar]=
     const char *quote_start, *quote_end; // Where an attribute quote is <foo bar='[123]'>
+    node* me; // The current node I'm working on
 #   include "test.h"
     return NULL;
 }
@@ -322,7 +332,8 @@ document* hexml_document_parse(const char* s, int slen)
     const char* res = parser(s, d);
     if (res != NULL)
         d->error_message = strdup(res);
-    // d->nodes.nodes[0].nodes = content;
+    else
+        d->nodes.nodes[0].nodes = start_end(1, d->nodes.used_front);
     return d;
 }
 
@@ -331,12 +342,14 @@ document* hexml_document_parse(const char* s, int slen)
 
 int main()
 {
-    const document* d = hexml_document_parse("<test foo='123 xyz'><inner /> value</test>", -1);
+    setbuf(stdout, NULL);
+    const char* example = "<bob />"; // "<test foo='123 xyz' bar='t'><inner /> value</test>";
+    const document* d = hexml_document_parse(example, -1);
     char buf[1000];
     int len = hexml_node_render(d, hexml_document_node(d), buf, sizeof(buf));
     buf[len] = 0;
     printf("Result = %s\n", buf);
-    printf("Used nodes = %i, attribtes = %i\n", d->nodes.used_front, d->attrs.used);
+    printf("Used nodes = %i, attributes = %i\n", d->nodes.used_front, d->attrs.used);
     return 0;
 }
 
