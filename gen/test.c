@@ -39,7 +39,6 @@ typedef struct
     // when you commit, you copy over from end to front
 
     // nodes
-    // Invariant: Always at least one free spot (to do copying from front to back)
     int size;
     int used_front; // front entries, stored for good
     int used_back; // back entries, stack based, copied into front on </close>
@@ -214,9 +213,8 @@ node* hexml_node_child(const document* d, const node* parent, const node* prev, 
 
 static inline node* node_alloc(node_buffer* b)
 {
-    // Invariant: node_commit requires at least one spare spot
     int space = b->size - b->used_back - b->used_front;
-    if (space < 2)
+    if (space < 1)
     {
         int size2 = (b->size + 1000) * 2;
         node* buf2 = malloc(size2 * sizeof(node));
@@ -232,9 +230,59 @@ static inline node* node_alloc(node_buffer* b)
     return &b->nodes[b->size - b->used_back - 1];
 }
 
-static inline void node_commit(node_buffer* b)
+// buffer[from .. from+n] = reverse (buffer[from .. from+n])
+// The ranges completely overlap
+static inline void reverse(node* buffer, int from, int n)
 {
+    int to = from + n - 1;
+    for (int to = from + n - 1; to > from; from++, to--)
+    while (to > from)
+    {
+        node temp = buffer[to];
+        buffer[to] = buffer[from];
+        buffer[from] = temp;
+    }
+}
 
+// buffer[to .. to+n] = reverse (buffer[from .. from+n])
+// The ranges may not overlap
+static inline void memcpy_reverse(node* buffer, int from, int to, int n)
+{
+    int end = from + n - 1;
+    for (int i = 0; i < n; i++)
+        buffer[to+i] = buffer[end-i];
+}
+
+// buffer[to .. to+n] = reverse (buffer[from .. from+n])
+// The ranges may overlap
+static inline void memmove_reverse(node* buffer, int from, int to, int n)
+{
+    assert(from < to); // always the case in my usages
+    if (to - from >= n)
+        memcpy_reverse(buffer, from, to, n);
+    else
+    {
+        int overlap = from - to;
+        memcpy_reverse(buffer, from, to + n - overlap, overlap);
+        reverse(buffer, to, n - overlap);
+    }
+}
+
+static inline str node_commit(node_buffer* b)
+{
+    // first search for an "open" node (nodes.length == -1)
+    int open;
+    for (open = b->size - b->used_back; open < b->size; open++)
+    {
+        if (b->nodes[open].nodes.length == -1)
+            break;
+    }
+
+    int n = open - (b->size - b->used_back);
+    memmove_reverse(b->nodes, b->used_front, b->used_back, n);
+    b->used_back -= n;
+    b->used_front += n;
+    return start_length(b->used_front - n, n);
 }
 
 static inline attr* attr_alloc(attr_buffer* b)
@@ -287,7 +335,7 @@ static inline str gap(const char* ref, const char* start, const char* end)
     attr->name = gap(d->body, name_start, name_end); \
     attr->value = gap(d->body, quote_start, quote_end);
 #define P_TagComment printf("TagComment %s\n", p)
-#define P_TagOpen printf("TagOpen %s\n", p)
+#define P_TagOpen printf("TagOpen - missed %s\n", p)
 #define P_TagClose printf("TagClose %s\n", p)
 #define P_TagOpenClose \
     node->nodes = start_end(0, 0); \
@@ -317,7 +365,6 @@ document* hexml_document_parse(const char* s, int slen)
 {
     if (slen == -1) slen = (int) strlen(s);
     assert(s[slen] == 0);
-    // init_parse_table();
 
     buffer* buf = malloc(sizeof(buffer));
     assert(buf);
@@ -346,7 +393,7 @@ document* hexml_document_parse(const char* s, int slen)
     if (res != NULL)
         d->error_message = strdup(res);
     else
-        d->nodes.nodes[0].nodes = start_end(1, d->nodes.used_front);
+        d->nodes.nodes[0].nodes = node_commit(&d->nodes);
     return d;
 }
 
