@@ -10,5 +10,5 @@ env:
 - GHCVER=head
 
 script:
-- curl -sL https://raw.github.com/ndmitchell/neil/master/travis.sh | sh
+- curl -sSL https://raw.github.com/ndmitchell/neil/master/travis.sh | sh
 - sh afl.sh
