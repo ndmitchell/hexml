@@ -1,5 +1,6 @@
 Changelog for Hexml
 
+0.3.4, released 2018-09-10
     #15, licensed under BSD-3-Clause OR Apache-2.0
 0.3.3, released 2017-10-27
     #13, allow the . character in tags and attributes
