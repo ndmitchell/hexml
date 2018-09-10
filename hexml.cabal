@@ -3,6 +3,7 @@ build-type:         Simple
 name:               hexml
 version:            0.3.3
 license:            BSD3
+x-license:          BSD-3-Clause OR Apache-2.0
 license-file:       LICENSE
 category:           XML
 author:             Neil Mitchell <ndmitchell@gmail.com>
