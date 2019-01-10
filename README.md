@@ -8,7 +8,7 @@ An XML DOM-style parser, that only parses a subset of XML, but is designed to be
 
 The name "hexml" is a combination of "Hex" (a curse) and "XML". The "X" should not be capitalised because the parser is more curse and less XML.
 
-Hexml may be suitable if you want to quickly parse XML, from known sources, and a full XML parser has been shown to be a bottleneck. As an alternative to hexml, which supports things like entities but is still pretty fast, see [Pugixml](http://pugixml.org/) (with a [Haskell binding](https://hackage.haskell.org/package/pugixml)).
+Hexml may be suitable if you want to quickly parse XML, from known sources, and a full XML parser has been shown to be a bottleneck. As an alternative to hexml, which supports things like entities but is still pretty fast, see [Pugixml](http://pugixml.org/) (with a [Haskell binding](https://hackage.haskell.org/package/pugixml) - but be aware the Haskell binding [can segfault](https://github.com/philopon/pugixml-hs/issues/5)).
 
 Hexml is tested with [AFL](http://lcamtuf.coredump.cx/afl/).
 
