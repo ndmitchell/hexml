@@ -13,3 +13,5 @@ Hexml may be suitable if you want to quickly parse XML, from known sources, and 
 Hexml is tested with [AFL](http://lcamtuf.coredump.cx/afl/).
 
 If you want lenses for Hexml, see [hexml-lens](http://hackage.haskell.org/package/hexml-lens).
+
+The optimisation work around Hexml spawned [Xeno](http://hackage.haskell.org/package/xeno), a Haskell-only alternative to Hexml. There is a [talk](https://ndmitchell.com/#hexml_12_oct_2017) covering the performance tricks of Hexml and Xeno.
