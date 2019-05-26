@@ -40,7 +40,7 @@ typedef struct
     // have a cursor at the end, which is stack scoped, so children write out, then I do
     // when you commit, you copy over from end to front
 
-    // nodes 
+    // nodes
     int size;
     int used_front; // front entries, stored for good
     int used_back; // back entries, stack based, copied into front
@@ -539,7 +539,7 @@ document* hexml_document_parse(const char* s, int slen)
     d->nodes.nodes[0].outer = start_length(0, slen);
     d->nodes.nodes[0].inner = start_length(0, slen);
     d->nodes.nodes[0].attrs = start_length(0, 0);
-    
+
     // Introduce an intermediate result, otherwise behaviour is undefined
     // because there is no guaranteed ordering between LHS and RHS evaluation
     str content = parse_content(d);
