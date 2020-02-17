@@ -10,7 +10,7 @@ module Lib(
 import Control.Monad.Extra
 import Control.Monad.Trans.Writer
 import Data.Maybe
-import Data.List
+import Data.List.Extra
 import Data.Bits
 import Data.Monoid
 import Numeric
@@ -106,7 +106,7 @@ charSetC sets =
     ,\x -> fromMaybe ("table[(int) *p] & " ++ showBit (bit $ fromJust $ elemIndex x hard)) $ simple x)
     where
         showBit x = "0x" ++ showHex (x :: Int) ""
-        disp c = showBit $ foldr (.|.) 0 [bit i | (i, h) <- zip [0..] hard, fromCharSet h c]
+        disp c = showBit $ foldr (.|.) 0 [bit i | (i, h) <- zipFrom 0 hard, fromCharSet h c]
 
         hard = nub $ filter (isNothing . simple) sets
 
