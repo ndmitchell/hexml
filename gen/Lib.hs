@@ -67,7 +67,7 @@ choices :: [Parser o ()] -> Parser o ()
 choices = foldr1 choice
 
 optional :: Parser o () -> Parser o ()
-optional x = choice x $ return ()
+optional x = choice x $ pure ()
 
 
 ---------------------------------------------------------------------

@@ -44,12 +44,12 @@ main = do
     attributes (head $ children doc) === [Attribute "id" "1", Attribute "extra" "2"]
     map (`attributeBy` "id") (childrenBy doc "test") === map (fmap (Attribute "id")) [Just "1", Just "2", Just "4", Nothing]
 
-    Right _ <- return $ parse $ "<test " <> BS.unwords [BS.pack $ "x" ++ show i ++ "='value'" | i <- [1..10000]] <> " />"
-    Right _ <- return $ parse $ BS.unlines $ replicate 10000 "<test x='value' />"
+    Right _ <- pure $ parse $ "<test " <> BS.unwords [BS.pack $ "x" ++ show i ++ "='value'" | i <- [1..10000]] <> " />"
+    Right _ <- pure $ parse $ BS.unlines $ replicate 10000 "<test x='value' />"
 
     let attrs = ["usd:jpy","test","extra","more","stuff","jpy:usd","xxx","xxxx"]
-    Right doc <- return $ parse $ "<test " <> BS.unwords [x <> "='" <> x <> "'" | x <- attrs] <> ">middle</test>"
-    [c] <- return $ childrenBy doc "test"
+    Right doc <- pure $ parse $ "<test " <> BS.unwords [x <> "='" <> x <> "'" | x <- attrs] <> ">middle</test>"
+    [c] <- pure $ childrenBy doc "test"
     forM_ attrs $ \a -> attributeBy c a === Just (Attribute a a)
     forM_ ["missing","gone","nothing"] $ \a -> attributeBy c a === Nothing
     putStrLn "\nSuccess"

@@ -90,11 +90,11 @@ parse src = do
         if err /= nullPtr then do
             bs <- BS.packCString =<< hexml_document_error doc
             hexml_document_free doc
-            return $ Left bs
+            pure $ Left bs
          else do
             node <- hexml_document_node doc
             doc <- newForeignPtr hexml_document_free_funptr doc
-            return $ Right $ Node src0 doc node
+            pure $ Right $ Node src0 doc node
 
 -- | Given a node, rerender it to something with an equivalent parse tree.
 --   Mostly useful for debugging - if you want the real source document use 'outer' instead.
@@ -103,7 +103,7 @@ render (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d -> do
     i <- hexml_node_render d n nullPtr 0
     res <- BS.create (fromIntegral i) $ \ptr -> void $ hexml_node_render d n (castPtr ptr) i
     touchBS src
-    return res
+    pure res
 
 applyStr :: BS.ByteString -> Str -> BS.ByteString
 applyStr bs Str{..} = BS.take (fromIntegral strLength) $ BS.drop (fromIntegral strStart) bs
@@ -118,7 +118,7 @@ attrPeek :: BS.ByteString -> ForeignPtr CDocument -> Ptr CAttr -> Attribute
 attrPeek src doc a = unsafePerformIO $ withForeignPtr doc $ \_ -> do
     name <- applyStr src <$> peekElemOff (castPtr a) 0
     val  <- applyStr src <$> peekElemOff (castPtr a) 1
-    return $ Attribute name val
+    pure $ Attribute name val
 
 -- | Get the name of a node, e.g. @\<test /\>@ produces @\"test\"@.
 name :: Node -> BS.ByteString
@@ -156,7 +156,7 @@ children (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d ->
     alloca $ \count -> do
         res <- hexml_node_children d n count
         count <- fromIntegral <$> peek count
-        return [Node src doc $ plusPtr res $ i*szNode | i <- [0..count-1]]
+        pure [Node src doc $ plusPtr res $ i*szNode | i <- [0..count-1]]
 
 -- | Get the attributes of this node.
 attributes :: Node -> [Attribute]
@@ -164,7 +164,7 @@ attributes (Node src doc n) = unsafePerformIO $ withForeignPtr doc $ \d ->
     alloca $ \count -> do
         res <- hexml_node_attributes d n count
         count <- fromIntegral <$> peek count
-        return [attrPeek src doc $ plusPtr res $ i*szAttr | i <- [0..count-1]]
+        pure [attrPeek src doc $ plusPtr res $ i*szAttr | i <- [0..count-1]]
 
 -- | Get the direct children of this node which have a specific name.
 --   A more efficient version of:
@@ -177,7 +177,7 @@ childrenBy (Node src doc n) str = go nullPtr
             BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
                 r <- hexml_node_child d n old bs $ fromIntegral len
                 touchBS src
-                return $ if r == nullPtr then [] else Node src doc r : go r
+                pure $ if r == nullPtr then [] else Node src doc r : go r
 
 -- | Get the first attribute of this node which has a specific name, if there is one.
 --   A more efficient version of:
@@ -188,7 +188,7 @@ attributeBy (Node src doc n) str = unsafePerformIO $ withForeignPtr doc $ \d ->
     BS.unsafeUseAsCStringLen str $ \(bs, len) -> do
         r <- hexml_node_attribute d n bs $ fromIntegral len
         touchBS src
-        return $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
+        pure $ if r == nullPtr then Nothing else Just $ attrPeek src doc r
 
 -- | Find the starting location of a node, the @<@ character.
 --   The first character will be reported as @(line 1,column 1)@, because thats

@@ -28,13 +28,13 @@ main = do
 
 writeFileChanged :: FilePath -> String -> IO ()
 writeFileChanged file new = do
-    old <- ifM (doesFileExist file) (readFile' file) (return "")
+    old <- ifM (doesFileExist file) (readFile' file) (pure "")
     when (old /= new) $
         writeFile file new
 
 buildRule :: [FilePath] -> [FilePath] -> IO () -> IO ()
 buildRule from to act = do
-    let modTime x = ifM (doesFileExist x) (Just <$> getModificationTime x) (return Nothing)
+    let modTime x = ifM (doesFileExist x) (Just <$> getModificationTime x) (pure Nothing)
     from <- mapM modTime from
     to <- mapM modTime to
     when (any isNothing (from ++ to) || maximum from >= minimum to)
