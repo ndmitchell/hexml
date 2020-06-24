@@ -142,7 +142,7 @@ outer = nodeBS 2
 contents :: Node -> [Either BS.ByteString Node]
 contents n@(Node src _ _) = f (strStart inner) outers
     where
-        f i [] = string i (strEnd inner) ++ []
+        f i [] = string i (strEnd inner)
         f i ((x, n):xs) = string i (strStart x) ++ Right n : f (strEnd x) xs
 
         string start end | start == end = []
