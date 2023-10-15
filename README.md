@@ -1,4 +1,4 @@
-# Hexml [![Hackage version](https://img.shields.io/hackage/v/hexml.svg?label=Hackage)](https://hackage.haskell.org/package/hexml) [![Stackage version](https://www.stackage.org/package/hexml/badge/nightly?label=Stackage)](https://www.stackage.org/package/hexml) [![Build status](https://img.shields.io/github/workflow/status/ndmitchell/hexml/ci/master.svg)](https://github.com/ndmitchell/hexml/actions)
+# Hexml [![Hackage version](https://img.shields.io/hackage/v/hexml.svg?label=Hackage)](https://hackage.haskell.org/package/hexml) [![Stackage version](https://www.stackage.org/package/hexml/badge/nightly?label=Stackage)](https://www.stackage.org/package/hexml) [![Build status](https://img.shields.io/github/actions/workflow/status/ndmitchell/hexml/ci.yml?branch=master)](https://github.com/ndmitchell/hexml/actions)
 
 An XML DOM-style parser, that only parses a subset of XML, but is designed to be fast. In particular:
 
