@@ -11,6 +11,7 @@ module Text.XML.Hexml(
     ) where
 
 import Control.Applicative
+import Control.Exception
 import Control.Monad
 import Data.Int
 import Foreign.C
@@ -84,7 +85,7 @@ touchBS = touchForeignPtr . fst3 . BS.toForeignPtr
 parse :: BS.ByteString -> Either BS.ByteString Node
 parse src = do
     let src0 = src <> BS.singleton '\0'
-    unsafePerformIO $ BS.unsafeUseAsCStringLen src0 $ \(str, len) -> do
+    unsafePerformIO $ BS.unsafeUseAsCStringLen src0 $ \(str, len) -> mask_ $ do
         doc <- hexml_document_parse str (fromIntegral len - 1)
         err <- hexml_document_error doc
         if err /= nullPtr then do
